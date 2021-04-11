@@ -1,0 +1,28 @@
+name: legate_pandas_dev
+channels:
+  - nvidia
+  - rapidsai-nightly
+  - conda-forge
+  - defaults
+dependencies:
+  - arrow-cpp=1.0.1
+  - arrow-cpp-proc=3.0.0
+  - clang=8.0.1
+  - clang-tools=8.0.1
+  - cffi
+  - numpy
+  - packaging
+  - python>=3.6,<3.8
+  - cudf=0.19
+  - rmm=0.19
+  - librmm=0.19
+  - flake8=3.8.3
+  - black=19.10
+  - isort=5.0.7
+  - pyarrow=1.0.1
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinx-markdown-tables
+  - sphinx-copybutton
+  - numpydoc
+  - nccl=2.8
