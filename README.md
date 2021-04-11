@@ -102,7 +102,7 @@ import legate.pandas as pd
 
 To execute Legate Pandas programs, you need to use the custom Python launcher
 `legate` included in the Legate Core installation. The launcher uses
-only CPUs by default, and you can command it to use GPUs with `--gpu (gpu
+only CPUs by default, and you can command it to use GPUs with `--gpus (gpu
 count)`. The launcher takes other machine flags (such as the maximum
 framebuffer size to use) to configure execution; see [this page]() in the
 Legate Core documentation for further details.
