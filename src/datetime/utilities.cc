@@ -25,8 +25,8 @@ namespace detail {
 std::string to_string(const int64_t &value)
 {
   // FIXME: This is hacky and does not work for a format string other than the one used below.
-  time_t epoch = value / 1000000000L + 28800;
-  auto time    = localtime(&epoch);
+  time_t epoch = value / 1000000000L;
+  auto time    = gmtime(&epoch);
   char date[128];
   strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", time);
   return date;
