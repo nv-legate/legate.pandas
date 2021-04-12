@@ -25,6 +25,39 @@ kernels in [cuDF](https://github.com/rapidsai/cudf). Legate Pandas targets
 dataframe programs with data processing requirements that cannot be fulfilled
 by a single GPU.
 
+Here we show some preliminary performance results with Legate Pandas.
+
+The following shows weak scaling performance of join micro-benchmark measured
+on an [NVIDIA DGX SuperPOD](https://www.nvidia.com/en-us/data-center/dgx-superpod/)
+(the lower the line is, the better):
+
+<img src="docs/figures/join-perf.png" alt="drawing" width="500"/>
+
+All implementations ([Legate Pandas](benchmarks/micro/merge.py),
+[Dask+cuDF](https://github.com/rapidsai/dask-cuda/blob/branch-0.19/dask_cuda/benchmarks/local_cudf_merge.py),
+and [MPI+cuDF](https://github.com/rapidsai/distributed-join)) use the same
+GPU-accelerated dataframe kernels in cuDF and differ only in the programming
+system and communication API. (the "explicit comm" version used a
+hand-optimized all-to-all shuffle code, instead of Dask's shuffle
+implementation.) The Legate Pandas version achieved almost the same level of
+performance as the hand-written MPI+cuDF version, despite the latter requiring
+significantly more efforts to write. Both of the Dask versions struggled to keep
+up with Legate Pandas.
+
+Legate Pandas also showed better performance than Dask+cuDF on a realistic example.
+The following shows weak scaling performance of the [mortgage data
+example](benchmarks/mortgage/mortgage.py) measured on an [NVIDIA
+DGX SuperPOD](https://www.nvidia.com/en-us/data-center/dgx-superpod/) (the
+lower the line is, the better); Legate Pandas was on average ~2.4X faster than
+Dask:
+
+<img src="docs/figures/mortgage-perf.png" alt="drawing" width="500"/>
+
+Legate Pandas is still a work-in-progress that is missing some features that
+Dask+cuDF supports, but we believe that the performance and composability of
+Legate Pandas is demonstrative of the value of our approach.
+
+---
 
 1. [Dependencies](#dependencies)
 2. [Installation](#installation)
@@ -51,12 +84,11 @@ All except the last three packages can be found in the
 rest can be downloaded from the
 [`rapidsai`](https://anaconda.org/rapidsai/repo) channel.
 
-We provide a [conda environment
-file](https://github.com/nv-legate/legate.pandas/blob/master/conda/legate_dev_nccl2.8.yml)
-that installs all these dependencies in one step. Use the following command to
+We provide a [conda environment file](conda/legate_pandas_dev_nccl2.8.yml) that
+installs all these dependencies in one step. Use the following command to
 create a conda environment with it:
 ```
-conda env create -n legate -f conda/legate_dev_nccl2.8.yml
+conda env create -n legate -f conda/legate_pandas_dev_nccl2.8.yml
 ```
 
 Users must also install [Legate Core](https://github.com/nv-legate/legate.core)
@@ -151,7 +183,6 @@ diverge for performance reasons:
 * Concatenation and append operation in Legate Pandas on `axis=0` perform
   a union of operand dataframes/series and not back-to-back concatenation.
 
-
 ## Limitations and Known issues
 
 The following is the list of limitations and known issues in the current
@@ -199,5 +230,5 @@ Any comments, suggestions, and feature requests are welcome.
 * There is a known issue in NCCL 2.8 that is causing hang on multi-node
   systems using Volta or older generations of GPUs. On such systems, please use
   NCCL 2.7 to avoid the issue. We provide a [conda environment
-  file](https://github.com/nv-legate/legate.pandas/blob/master/conda/legate_dev_nccl2.7.yml)
-  that installs NCCL 2.7 instead of 2.8.
+  file](conda/legate_pandas_dev_nccl2.7.yml) that installs NCCL 2.7 instead of
+  2.8.
