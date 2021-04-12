@@ -24,10 +24,8 @@ import json
 import multiprocessing
 import os
 import platform
-import shutil
 import subprocess
 import sys
-import tempfile
 
 # Find physical core count of the machine.
 if platform.system() == "Linux":
@@ -170,7 +168,6 @@ def run_all_tests_legate(
     test_name,
     legate_tests,
     root_dir,
-    temp_dir,
     flags,
     env,
     threads,
@@ -370,7 +367,6 @@ def run_tests(
     gpus=1,
     only_pattern=None,
     root_dir=None,
-    keep_tmp_dir=False,
     suppress_stdout=False,
     verbose=False,
 ):
@@ -398,11 +394,6 @@ def run_tests(
         use_cmake,
     )
 
-    tmp_dir = tempfile.mkdtemp(dir=root_dir)
-    if verbose:
-        print("Using build directory: %s" % tmp_dir)
-        print()
-
     # Normalize the test environment.
     env = dict(
         list(os.environ.items())
@@ -413,7 +404,6 @@ def run_tests(
             ("USE_CUDA", "1" if use_cuda else "0"),
             ("USE_PYTHON", "1"),  # Always need python for Legate
             ("USE_SPY", "1" if use_spy else "0"),
-            ("CMAKE_BUILD_DIR", os.path.join(tmp_dir, "build")),
         ]
         + (
             # Gcov doesn't get a USE_GCOV flag, but instead stuff the GCC
@@ -443,67 +433,55 @@ def run_tests(
 
     legate_tests = find_tests_to_run(only_pattern)
 
-    try:
-        # Build Legate in the right environment
-        # with Stage('build'):
-        #    build_legate(root_dir, env, thread_count)
-        total_pass, total_count = 0, 0
-        # Now run the tests
-        if not use_cuda:
-            with Stage("CPU tests"):
-                count = run_all_tests_legate(
-                    "CPU",
-                    legate_tests,
-                    root_dir,
-                    tmp_dir,
-                    ["--cpus", str(cpus)],
-                    env,
-                    thread_count,
-                    node_count,
-                    suppress_stdout,
-                    verbose,
-                    cpus,
-                    utils,
-                )
-                total_pass += count
-                total_count += len(legate_tests)
-        else:
-            with Stage("GPU tests"):
-                count = run_all_tests_legate(
-                    "GPU",
-                    legate_tests,
-                    root_dir,
-                    tmp_dir,
-                    ["--gpus", str(gpus), "-lg:window", "4096"],
-                    env,
-                    thread_count,
-                    node_count,
-                    suppress_stdout,
-                    verbose,
-                    gpus,
-                    utils,
-                )
-                total_pass += count
-                total_count += len(legate_tests)
-        print("    " + "~" * 54)
-        print(
-            "%24s: Passed %4d of %4d tests (%5.1f%%)"
-            % (
-                "total",
-                total_pass,
-                total_count,
-                (float(100 * total_pass) / total_count),
+    # Build Legate in the right environment
+    # with Stage('build'):
+    #    build_legate(root_dir, env, thread_count)
+    total_pass, total_count = 0, 0
+    # Now run the tests
+    if not use_cuda:
+        with Stage("CPU tests"):
+            count = run_all_tests_legate(
+                "CPU",
+                legate_tests,
+                root_dir,
+                ["--cpus", str(cpus)],
+                env,
+                thread_count,
+                node_count,
+                suppress_stdout,
+                verbose,
+                cpus,
+                utils,
             )
+            total_pass += count
+            total_count += len(legate_tests)
+    else:
+        with Stage("GPU tests"):
+            count = run_all_tests_legate(
+                "GPU",
+                legate_tests,
+                root_dir,
+                ["--gpus", str(gpus), "-lg:window", "4096"],
+                env,
+                thread_count,
+                node_count,
+                suppress_stdout,
+                verbose,
+                gpus,
+                utils,
+            )
+            total_pass += count
+            total_count += len(legate_tests)
+    print("    " + "~" * 54)
+    print(
+        "%24s: Passed %4d of %4d tests (%5.1f%%)"
+        % (
+            "total",
+            total_pass,
+            total_count,
+            (float(100 * total_pass) / total_count),
         )
-    finally:
-        if keep_tmp_dir:
-            print("Leaving build directory:")
-            print("  %s" % tmp_dir)
-        else:
-            if verbose:
-                print("Removing build directory:")
-                print("  %s" % tmp_dir)
-            shutil.rmtree(tmp_dir)
+    )
 
 
 # behaves enough like a normal list for ArgumentParser's needs, except for
@@ -620,13 +598,6 @@ def driver():
         nargs="?",
         type=int,
         help="Number threads used to compile.",
-    )
-
-    parser.add_argument(
-        "--keep",
-        dest="keep_tmp_dir",
-        action="store_true",
-        help="Keep temporary directory.",
     )
 
     parser.add_argument(
