@@ -156,7 +156,8 @@ essential for data processing:
   - Reduction operators (`sum`, `mean`, `var`, etc.)
   - IO with CSV and Parquet file formats
 
-See the [API reference]() for a complete list of supported features.
+See the [API reference](https://nv-legate.github.io/legate.pandas/api.html) for
+a complete list of supported features.
 
 Legate Pandas currently supports the following data types:
 
