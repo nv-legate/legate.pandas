@@ -1,0 +1,440 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Legate Pandas &mdash; legate.pandas  documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/copybutton.css" type="text/css" />
+  <link rel="stylesheet" href="_static/params.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/clipboard.min.js"></script>
+        <script src="_static/copybutton.js"></script>
+        <script src="_static/copybutton_pydocs.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Legate Pandas API Reference" href="api.html" />
+    <link rel="prev" title="Welcome to Legate Pandas’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> legate.pandas
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#execution">Execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supported-features">Supported Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#differences-between-pandas-and-legate-pandas">Differences between Pandas and Legate Pandas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#limitations-and-known-issues">Limitations and Known issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">legate.pandas</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Legate Pandas</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <!--
+Copyright 2021 NVIDIA Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+--><div class="section" id="legate-pandas">
+<h1>Legate Pandas<a class="headerlink" href="#legate-pandas" title="Permalink to this headline">¶</a></h1>
+<p>Legate Pandas is a distributed and accelerated drop-in replacement of
+<a class="reference external" href="https://pandas.pydata.org">Pandas</a>. Legate Pandas enables high-performance,
+scalable execution of dataframe programs on multi-GPU systems by combining the
+<a class="reference external" href="https://legion.stanford.edu">Legion</a> runtime with GPU accelerated dataframe
+kernels in <a class="reference external" href="https://github.com/rapidsai/cudf">cuDF</a>. Legate Pandas targets
+dataframe programs with data processing requirements that cannot be fulfilled
+by a single GPU.</p>
+<p>Here we show some preliminary performance results with Legate Pandas.</p>
+<p>The following shows weak scaling performance of join micro-benchmark measured
+on an <a class="reference external" href="https://www.nvidia.com/en-us/data-center/dgx-superpod/">NVIDIA DGX SuperPOD</a>
+(the lower the line is, the better):</p>
+<img src="docs/figures/join-perf.png" alt="drawing" width="500"/><p>All implementations (<a class="reference external" href="benchmarks/micro/merge.py">Legate Pandas</a>,
+<a class="reference external" href="https://github.com/rapidsai/dask-cuda/blob/branch-0.19/dask_cuda/benchmarks/local_cudf_merge.py">Dask+cuDF</a>,
+and <a class="reference external" href="https://github.com/rapidsai/distributed-join">MPI+cuDF</a>) use the same
+GPU-accelerated dataframe kernels in cuDF and differ only in the programming
+system and communication API. (the “explicit comm” version used a
+hand-optimized all-to-all shuffle code, instead of Dask’s shuffle
+implementation.) The Legate Pandas version achieved almost the same level of
+performance as the hand-written MPI+cuDF version, despite the latter requiring
+significantly more efforts to write. Both of the Dask versions struggled to keep
+up with Legate Pandas.</p>
+<p>Legate Pandas also showed better performance than Dask+cuDF on a realistic example.
+The following shows weak scaling performance of the <a class="reference external" href="benchmarks/mortgage/mortgage.py">mortgage data
+example</a> measured on an <a class="reference external" href="https://www.nvidia.com/en-us/data-center/dgx-superpod/">NVIDIA
+DGX SuperPOD</a> (the
+lower the line is, the better); Legate Pandas was on average ~2.4X faster than
+Dask:</p>
+<img src="docs/figures/mortgage-perf.png" alt="drawing" width="500"/><p>Legate Pandas is still a work-in-progress that is missing some features that
+Dask+cuDF supports, but we believe that the performance and composability of
+Legate Pandas is demonstrative of the value of our approach.</p>
+<hr class="docutils" />
+<ol class="simple">
+<li><p><a class="reference external" href="#dependencies">Dependencies</a></p></li>
+<li><p><a class="reference external" href="#installation">Installation</a></p></li>
+<li><p><a class="reference external" href="#execution">Execution</a></p></li>
+<li><p><a class="reference external" href="#supported-features">Supported Features</a></p></li>
+<li><p><a class="reference external" href="#differences-between-pandas-and-legate-pandas">Differences between Pandas and Legate Pandas</a></p></li>
+<li><p><a class="reference external" href="#limitations-and-known-issues">Limitations and Known Issues</a></p></li>
+</ol>
+<div class="section" id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<p>Legate Pandas requires Python &gt;= 3.6 and the following packages:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">arrow-cpp=1.0.1</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">arrow-cpp-proc=3.0.0</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pyarrow=1.0.1</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">numpy</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nccl&gt;=2.7</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cudf=0.19</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">librmm=0.19</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rmm=0.19</span></code></p></li>
+</ul>
+<p>All except the last three packages can be found in the
+<a class="reference external" href="https://conda-forge.org/feedstock-outputs/"><code class="docutils literal notranslate"><span class="pre">conda-forge</span></code></a> channel and the
+rest can be downloaded from the
+<a class="reference external" href="https://anaconda.org/rapidsai/repo"><code class="docutils literal notranslate"><span class="pre">rapidsai</span></code></a> channel.</p>
+<p>We provide a <a class="reference external" href="conda/legate_pandas_dev_nccl2.8.yml">conda environment file</a> that
+installs all these dependencies in one step. Use the following command to
+create a conda environment with it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">legate</span> <span class="o">-</span><span class="n">f</span> <span class="n">conda</span><span class="o">/</span><span class="n">legate_pandas_dev_nccl2</span><span class="o">.</span><span class="mf">8.</span><span class="n">yml</span>
+</pre></div>
+</div>
+<p>Users must also install <a class="reference external" href="https://github.com/nv-legate/legate.core">Legate Core</a>
+to build Legate Pandas from source.</p>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Legate Pandas can be built and installed from source using two install scripts,
+<code class="docutils literal notranslate"><span class="pre">setup.py</span></code> and <code class="docutils literal notranslate"><span class="pre">install.py</span></code>. Both can be used interchangeably, but the latter
+provides additional flags to configure the build, which are intended for
+advanced users. To see the list of all build flags, run <code class="docutils literal notranslate"><span class="pre">./install.py</span> <span class="pre">--help</span></code>.</p>
+<p>Both scripts take five essential flags, one for a path to each dependency:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--with-core</span> <span class="pre">(path</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">legate.core</span> <span class="pre">installation)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--with-arrow</span> <span class="pre">(path</span> <span class="pre">to</span> <span class="pre">arrow-cpp)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--with-cudf</span> <span class="pre">(path</span> <span class="pre">to</span> <span class="pre">cudf)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--with-rmm</span> <span class="pre">(path</span> <span class="pre">to</span> <span class="pre">rmm)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--with-nccl</span> <span class="pre">(path</span> <span class="pre">to</span> <span class="pre">nccl)</span></code></p></li>
+</ul>
+<p>These paths need to be provided only once and the paths will be cached for
+later rebuilds. An example command to install Legate Pandas under a conda
+environment per our instruction is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">install</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="k">with</span><span class="o">-</span><span class="n">core</span> <span class="p">(</span><span class="n">path</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">legate</span><span class="o">.</span><span class="n">core</span><span class="p">)</span> \
+  <span class="o">--</span><span class="k">with</span><span class="o">-</span><span class="n">arrow</span> <span class="s2">&quot;$CONDA_PREFIX&quot;</span> \
+  <span class="o">--</span><span class="k">with</span><span class="o">-</span><span class="n">cudf</span> <span class="s2">&quot;$CONDA_PREFIX&quot;</span> \
+  <span class="o">--</span><span class="k">with</span><span class="o">-</span><span class="n">rmm</span> <span class="s2">&quot;$CONDA_PREFIX&quot;</span> \
+  <span class="o">--</span><span class="k">with</span><span class="o">-</span><span class="n">nccl</span> <span class="s2">&quot;$CONDA_PREFIX&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="execution">
+<h2>Execution<a class="headerlink" href="#execution" title="Permalink to this headline">¶</a></h2>
+<p>The very first step to start using Legate Pandas is to replace this import
+statement in your program:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+</div>
+<p>with this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">legate.pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+</pre></div>
+</div>
+<p>To execute Legate Pandas programs, you need to use the custom Python launcher
+<code class="docutils literal notranslate"><span class="pre">legate</span></code> included in the Legate Core installation. The launcher uses only CPUs
+by default, and you can command it to use GPUs with <code class="docutils literal notranslate"><span class="pre">--gpus</span> <span class="pre">(gpu</span> <span class="pre">count)</span></code>. The
+launcher takes other machine flags (such as the maximum framebuffer size to
+use) to configure execution; see the <a class="reference external" href="https://github.com/nv-legate/legate.core#how-do-i-use-legate">“How Do I Use
+Legate”</a> section
+for further details.</p>
+</div>
+<div class="section" id="supported-features">
+<h2>Supported Features<a class="headerlink" href="#supported-features" title="Permalink to this headline">¶</a></h2>
+<p>Pandas has an incredibly large API that any attempt to build a drop-in
+replacement for it takes enormous effort. Legate Pandas is still work in
+progress and currently covers the following list of features that we think are
+essential for data processing:</p>
+<ul class="simple">
+<li><p>Joins (<code class="docutils literal notranslate"><span class="pre">merge</span></code> and <code class="docutils literal notranslate"><span class="pre">join</span></code>)</p></li>
+<li><p>Groupby reductions (<code class="docutils literal notranslate"><span class="pre">groupby.sum</span></code>, <code class="docutils literal notranslate"><span class="pre">groupby.mean</span></code>, <code class="docutils literal notranslate"><span class="pre">groupby.var</span></code>, etc.)</p></li>
+<li><p>Sorting (<code class="docutils literal notranslate"><span class="pre">sort_values</span></code> and <code class="docutils literal notranslate"><span class="pre">sort_index</span></code>)</p></li>
+<li><p>Arithmetic and comparison operators</p></li>
+<li><p>Cumulative operators (<code class="docutils literal notranslate"><span class="pre">cumsum</span></code>, <code class="docutils literal notranslate"><span class="pre">cummax</span></code>, etc.)</p></li>
+<li><p>Reduction operators (<code class="docutils literal notranslate"><span class="pre">sum</span></code>, <code class="docutils literal notranslate"><span class="pre">mean</span></code>, <code class="docutils literal notranslate"><span class="pre">var</span></code>, etc.)</p></li>
+<li><p>IO with CSV and Parquet file formats</p></li>
+</ul>
+<p>See the <a class="reference external" href="#">API reference</a> for a complete list of supported features.</p>
+<p>Legate Pandas currently supports the following data types:</p>
+<ul class="simple">
+<li><p>All primitive data types</p></li>
+<li><p>String</p></li>
+<li><p>Categorical types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">datetime64[ns]</span></code></p></li>
+</ul>
+</div>
+<div class="section" id="differences-between-pandas-and-legate-pandas">
+<h2>Differences between Pandas and Legate Pandas<a class="headerlink" href="#differences-between-pandas-and-legate-pandas" title="Permalink to this headline">¶</a></h2>
+<p>Since Pandas has not been designed and implemented for parallel execution in
+mind, many of its semantic guarantees are not necessarily suitable to match
+under a distributed execution setting. Though we strive to match Pandas’
+semantics as much as possible in Legate Pandas so that users can port their
+code to Legate Pandas effortlessly, there are some occasions that we had to
+diverge for performance reasons:</p>
+<ul class="simple">
+<li><p>Joins do not sort keys of the outputs.</p></li>
+<li><p>Groupby reductions do not sort keys of the outputs by default. Users can
+still request sorted outputs with <code class="docutils literal notranslate"><span class="pre">sort=True</span></code>, which merely sorts the
+outputs before returning them.</p></li>
+<li><p>Concatenation and append operation in Legate Pandas on <code class="docutils literal notranslate"><span class="pre">axis=0</span></code> perform
+a union of operand dataframes/series and not back-to-back concatenation.</p></li>
+</ul>
+</div>
+<div class="section" id="limitations-and-known-issues">
+<h2>Limitations and Known issues<a class="headerlink" href="#limitations-and-known-issues" title="Permalink to this headline">¶</a></h2>
+<p>The following is the list of limitations and known issues in the current
+release of Legate Pandas. We are actively working on addressing these issues.
+Any comments, suggestions, and feature requests are welcome.</p>
+<ul>
+<li><p>The current partitioning strategy simply distributes a dataframe or series
+across all the GPUs (or CPUs, if GPUs are not available) as evenly as
+possible. A more intelligent partitioning heuristic taking the data size
+into account is still in progress.</p></li>
+<li><p>All operations that take more than one dataframe or series, such as binary
+operators, expect all the operands to be aligned on indexes. For
+examples, Legate Pandas throws an unimplemented exception on the
+following example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+</pre></div>
+</div>
+</li>
+<li><p>Legate Pandas raises a hard error for cases where Pandas would have raised
+exceptions, such as failing to encode a value into a given set of categories.</p></li>
+<li><p>Categories must be strings for now.</p></li>
+<li><p>Legate Pandas is currently piggybacking on Pandas for indexes and
+categorical types, and provides no native abstractions for them.
+In particular, accessing the <code class="docutils literal notranslate"><span class="pre">index</span></code> property of a dataframe or a series
+will materialize the index distributed across multiple memories into
+a single Python object, which can be problematic when the index does not
+fit to a system memory. Users should avoid using it and instead convert
+the index to a column with <code class="docutils literal notranslate"><span class="pre">reset_index</span></code>.</p></li>
+<li><p>Some options in the operations found in the API references may not be
+supported. Legate Pandas will raise an exception when the user passed
+such options. In particular, the <code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">iloc</span></code> locators do not accept
+arbitrary lists of index values as indexers for now.</p></li>
+<li><p>Locators, <code class="docutils literal notranslate"><span class="pre">head</span></code>, and <code class="docutils literal notranslate"><span class="pre">tail</span></code> currently make a copy of the selected part
+of operand dataframe/series, for which Pandas would return a view to it.
+For example, the following in-place update internally copies
+999 untouched elements:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">))</span>
+<span class="n">x</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>In general, the CPU implementation in Legate Pandas is only functionally
+correct and not optimized. We recommend you run Legate Pandas on GPUs for
+any performance evaluation.</strong></p></li>
+<li><p>There is a known issue in NCCL 2.8 that is causing hang on multi-node
+systems using Volta or older generations of GPUs. On such systems, please use
+NCCL 2.7 to avoid the issue. We provide a <a class="reference external" href="conda/legate_pandas_dev_nccl2.7.yml">conda environment
+file</a> that installs NCCL 2.7 instead of
+2.8.</p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="api.html" class="btn btn-neutral float-right" title="Legate Pandas API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Legate Pandas’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, NVIDIA.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
