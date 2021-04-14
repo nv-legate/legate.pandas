@@ -17,9 +17,11 @@
 #include "copy/tasks/fill.h"
 #include "column/device_column.h"
 #include "cudf_util/scalar.h"
+#include "cudf_util/types.h"
 #include "util/gpu_task_context.h"
 #include "util/type_dispatch.h"
 
+#include <cudf/column/column_factories.hpp>
 #include <cudf/column/column_view.hpp>
 #include <cudf/table/table.hpp>
 #include <cudf/table/table_view.hpp>
@@ -41,17 +43,40 @@ struct Fill {
   {
     using VAL = pandas_type_of<CODE>;
 
-    out.allocate(size);
-    if (size == 0) return;
+    if (size == 0) {
+      out.make_empty(true);
+      return;
+    }
 
     if (!scalar.valid()) {
+      out.allocate(size);
       out.bitmask().clear(stream);
       return;
     }
 
+    DeferredBufferAllocator mr;
     auto p_scalar = to_cudf_scalar<CODE>(scalar.ptr<VAL>(), stream);
-    auto m_out    = DeviceOutputColumn{out}.to_mutable_cudf_column();
-    cudf::detail::fill_in_place(m_out, 0, static_cast<cudf::size_type>(size), *p_scalar, stream);
+    std::unique_ptr<cudf::column> result;
+    if (CODE != TypeCode::TS_NS)
+      result = cudf::make_numeric_column(cudf::data_type(to_cudf_type_id(CODE)),
+                                         static_cast<cudf::size_type>(size),
+                                         cudf::mask_state::UNALLOCATED,
+                                         stream,
+                                         &mr);
+    else
+      result = cudf::make_timestamp_column(cudf::data_type(to_cudf_type_id(CODE)),
+                                           static_cast<cudf::size_type>(size),
+                                           cudf::mask_state::UNALLOCATED,
+                                           stream,
+                                           &mr);
+
+    if (scalar.valid()) {
+      auto result_mut = result->mutable_view();
+      cudf::detail::fill_in_place(
+        result_mut, 0, static_cast<cudf::size_type>(size), *p_scalar, stream);
+      DeviceOutputColumn(out).return_from_cudf_column(mr, result_mut, stream);
+    } else
+      DeviceOutputColumn(out).return_from_cudf_column(mr, result->view(), stream);
   }
 
   template <TypeCode CODE, std::enable_if_t<CODE == TypeCode::STRING> * = nullptr>
