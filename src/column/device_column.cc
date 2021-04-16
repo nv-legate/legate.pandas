@@ -62,19 +62,5 @@ void DeviceOutputColumn::return_from_cudf_column(DeferredBufferAllocator& alloca
       allocator, cudf_column.child(idx), stream);
 }
 
-cudf::mutable_column_view DeviceOutputColumn::to_mutable_cudf_column() const
-{
-  auto p             = is_meta() ? nullptr : raw_column_untyped();
-  const auto type_id = to_cudf_type_id(code());
-  const auto size    = static_cast<cudf::size_type>(num_elements());
-
-  std::vector<cudf::mutable_column_view> children;
-  for (auto child_idx = 0; child_idx < num_children(); ++child_idx)
-    children.push_back(DeviceOutputColumn{child(child_idx)}.to_mutable_cudf_column());
-
-  return cudf::mutable_column_view{
-    cudf::data_type{type_id}, size, p, nullptr, 0, 0, std::move(children)};
-}
-
 }  // namespace pandas
 }  // namespace legate

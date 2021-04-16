@@ -40,8 +40,6 @@ class DeviceColumn {
  public:
   const cudf::bitmask_type* raw_bitmask_read(cudaStream_t stream) const;
   cudf::column_view to_cudf_column(cudaStream_t stream) const;
-  template <bool _READ = READ, std::enable_if_t<not _READ>* = nullptr>
-  cudf::mutable_column_view to_mutable_cudf_column() const;
 
  private:
   const Column<READ>& host_column_;
@@ -60,9 +58,6 @@ class DeviceOutputColumn : public OutputColumn {
   void return_from_cudf_column(DeferredBufferAllocator& allocator,
                                cudf::column_view cudf_column,
                                cudaStream_t stream);
-
- public:
-  cudf::mutable_column_view to_mutable_cudf_column() const;
 };
 
 template <bool READ>
@@ -105,24 +100,6 @@ cudf::column_view DeviceColumn<READ>::to_cudf_column(cudaStream_t stream) const
                            null_count,
                            0,
                            std::move(children)};
-}
-
-template <bool READ>
-template <bool _READ, std::enable_if_t<not _READ>*>
-cudf::mutable_column_view DeviceColumn<READ>::to_mutable_cudf_column() const
-{
-  auto p             = host_column_.is_meta() ? nullptr : host_column_.raw_column_untyped_write();
-  const auto type_id = to_cudf_type_id(host_column_.code());
-  const auto size    = static_cast<cudf::size_type>(host_column_.num_elements());
-
-  std::vector<cudf::mutable_column_view> children;
-  for (auto child_idx = 0; child_idx < host_column_.num_children(); ++child_idx) {
-    DeviceColumn<READ> child{host_column_.child(child_idx)};
-    children.push_back(child.to_mutable_cudf_column());
-  }
-
-  return cudf::mutable_column_view{
-    cudf::data_type{type_id}, size, p, nullptr, 0, 0, std::move(children)};
 }
 
 }  // namespace pandas
