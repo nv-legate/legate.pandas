@@ -20,8 +20,8 @@
 #include <sys/stat.h>
 
 #include "io/tasks/read_csv.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/types.h"
 #include "util/gpu_task_context.h"
 #include "util/zip_for_each.h"
@@ -151,12 +151,6 @@ bool can_split_within_file(const ReadCSVArgs &args)
 
   DeferredBufferAllocator mr;
 
-  auto return_columns = [&](auto result_view) {
-    util::for_each(args.columns, result_view, [&](auto &output, auto &input) {
-      DeviceOutputColumn{output}.return_from_cudf_column(mr, input, stream);
-    });
-  };
-
   int64_t task_id   = task->index_point[0];
   int64_t num_tasks = static_cast<int64_t>(task->index_domain.get_volume());
 
@@ -175,8 +169,8 @@ bool can_split_within_file(const ReadCSVArgs &args)
         cudf::io::detail::csv::reader reader{args.filenames, csv_args, &mr};
 
         auto result = reader.read(stream);
-        return_columns(result.tbl->view());
-        num_rows = static_cast<int64_t>(result.tbl->num_rows());
+        num_rows    = static_cast<int64_t>(result.tbl->num_rows());
+        from_cudf_table(args.columns, std::move(result.tbl), stream, mr);
       } else {
         for (auto &column : args.columns) column.make_empty(true);
         num_rows = 0;
@@ -194,8 +188,8 @@ bool can_split_within_file(const ReadCSVArgs &args)
           result.tbl->view(),
           {static_cast<cudf::size_type>(offset), static_cast<cudf::size_type>(offset + num_rows)});
         // Make a copy of the slice to return
-        cudf::table copy(sliced, stream, &mr);
-        return_columns(copy.view());
+        auto copy = std::make_unique<cudf::table>(sliced, stream, &mr);
+        from_cudf_table(args.columns, std::move(copy), stream, mr);
       } else {
         for (auto &column : args.columns) column.make_empty(true);
       }
@@ -227,8 +221,8 @@ bool can_split_within_file(const ReadCSVArgs &args)
       for (auto &table : tables) table_views.push_back(table->view());
 
       auto result = cudf::detail::concatenate(table_views, stream, &mr);
-      return_columns(result->view());
-      num_rows = static_cast<int64_t>(result->num_rows());
+      num_rows    = static_cast<int64_t>(result->num_rows());
+      from_cudf_table(args.columns, std::move(result), stream, mr);
     }
   }
 

@@ -18,8 +18,8 @@
 
 #include "category/tasks/drop_duplicates.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/cuda_helper.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
@@ -59,8 +59,7 @@ namespace category {
   auto stream = gpu_ctx.stream();
 
   std::vector<cudf::column_view> columns;
-  for (auto const &input : inputs)
-    columns.push_back(DeviceColumn<true>{input}.to_cudf_column(stream));
+  for (auto const &input : inputs) columns.push_back(to_cudf_column(input, stream));
 
   DeferredBufferAllocator mr;
   auto input = cudf::detail::concatenate(columns, stream, &mr);

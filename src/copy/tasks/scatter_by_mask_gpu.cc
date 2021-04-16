@@ -15,8 +15,8 @@
  */
 
 #include "copy/tasks/scatter_by_mask.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "util/gpu_task_context.h"
 #include "util/zip_for_each.h"
@@ -49,15 +49,14 @@ using namespace Legion;
 
   DeferredBufferAllocator mr;
 
-  auto mask = DeviceColumn<true>{args.mask}.to_cudf_column(stream);
+  auto mask = to_cudf_column(args.mask, stream);
 
   std::vector<cudf::column_view> input_columns;
   std::vector<std::unique_ptr<cudf::scalar>> input_scalars;
   std::vector<std::reference_wrapper<const cudf::scalar>> input_scalars_refs;
   std::vector<cudf::column_view> target_columns;
 
-  for (auto &req : args.requests)
-    target_columns.push_back(DeviceColumn<true>{req.target}.to_cudf_column(stream));
+  for (auto &req : args.requests) target_columns.push_back(to_cudf_column(req.target, stream));
 
   if (args.input_is_scalar)
     for (auto &req : args.requests) {
@@ -66,8 +65,7 @@ using namespace Legion;
       input_scalars.push_back(std::move(scalar));
     }
   else
-    for (auto &req : args.requests)
-      input_columns.push_back(DeviceColumn<true>{req.input}.to_cudf_column(stream));
+    for (auto &req : args.requests) input_columns.push_back(to_cudf_column(req.input, stream));
 
   std::unique_ptr<cudf::table> result;
   if (args.input_is_scalar)
@@ -80,9 +78,9 @@ using namespace Legion;
                                                 stream,
                                                 &mr);
 
-  auto result_view = result->view();
-  util::for_each(args.requests, result_view, [&](auto &req, auto &result) {
-    DeviceOutputColumn{req.output}.return_from_cudf_column(mr, result, stream);
+  auto result_columns = result->release();
+  util::for_each(args.requests, result_columns, [&](auto &req, auto &result) {
+    from_cudf_column(req.output, std::move(result), stream, mr);
   });
 }
 

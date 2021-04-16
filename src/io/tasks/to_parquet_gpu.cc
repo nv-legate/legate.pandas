@@ -16,8 +16,8 @@
 
 #include "io/tasks/to_parquet.h"
 #include "io/file_util.h"
+#include "cudf_util/column.h"
 #include "cudf_util/types.h"
-#include "column/device_column.h"
 #include "util/cuda_helper.h"
 #include "util/gpu_task_context.h"
 #include "util/zip_for_each.h"
@@ -49,8 +49,7 @@ using namespace Legion;
   auto stream = gpu_ctx.stream();
 
   std::vector<cudf::column_view> columns;
-  for (auto &column : args.columns)
-    columns.push_back(DeviceColumn<true>(column).to_cudf_column(stream));
+  for (auto &column : args.columns) columns.push_back(to_cudf_column(column, stream));
   cudf::table_view table(std::move(columns));
 
   auto task_id = static_cast<uint32_t>(task->index_point[0]);

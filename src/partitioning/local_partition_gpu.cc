@@ -17,10 +17,9 @@
 #include "partitioning/local_partition.h"
 #include "partitioning/local_partition_args.h"
 
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
-#include "util/zip_for_each.h"
 
 #include <cudf/null_mask.hpp>
 #include <cudf/partitioning.hpp>
@@ -59,18 +58,14 @@ using CudfColumns = std::vector<cudf::column_view>;
   auto stream = gpu_ctx.stream();
 
   CudfColumns columns;
-  for (auto const &column : args.input)
-    columns.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
+  for (auto const &column : args.input) columns.push_back(to_cudf_column(column, stream));
 
   DeferredBufferAllocator mr;
   cudf::table_view table{std::move(columns)};
 
   auto result = cudf::hash_partition(
     table, args.key_indices, args.num_pieces, cudf::hash_id::HASH_MURMUR3, 12345, stream, &mr);
-
-  util::for_each(args.output, result.first->view(), [&](auto &output, auto &cudf_output) {
-    DeviceOutputColumn{output}.return_from_cudf_column(mr, cudf_output, stream);
-  });
+  from_cudf_table(args.output, std::move(result.first), stream, mr);
 
   std::vector<int32_t> &offsets = result.second;
   offsets.push_back(args.input[0].num_elements());

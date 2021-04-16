@@ -16,8 +16,8 @@
 
 #include "index/tasks/find_bounds.h"
 #include "index/search.cuh"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/detail.h"
 #include "cudf_util/scalar.h"
 #include "cudf_util/types.h"
@@ -89,7 +89,7 @@ coord_t search_backward(cudf::column_view in,
   auto stream = gpu_ctx.stream();
 
   std::vector<cudf::column_view> columns;
-  columns.push_back(DeviceColumn<true>(column).to_cudf_column(stream));
+  columns.push_back(to_cudf_column(column, stream));
 
 #ifdef DEBUG_PANDAS
   // FIXME: We need to support multi-index

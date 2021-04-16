@@ -17,8 +17,8 @@
 #include "reduction/tasks/unary_reduction.h"
 #include "reduction/reduction_op.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/detail.h"
 #include "cudf_util/scalar.h"
 #include "cudf_util/types.h"
@@ -70,7 +70,7 @@ Scalar create_scalar_from_identity(TypeCode type_code)
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto in_col = DeviceColumn<true>{in}.to_cudf_column(stream);
+  auto in_col = to_cudf_column(in, stream);
 
   if (agg_code == AggregationCode::COUNT) return Scalar(true, in_col.size() - in_col.null_count());
 

@@ -148,10 +148,15 @@ class OutputColumn {
  public:
   void return_from_scalars(const std::vector<Scalar> &scalars);
   void return_from_view(alloc::DeferredBufferAllocator &allocator, detail::Column view);
+  void return_column_from_instance(Realm::RegionInstance instance, size_t num_elements);
+
+ public:
   void allocate(size_t num_elements,
                 bool recurse             = false,
                 size_t alignment         = 16,
                 size_t bitmask_alignment = 64);
+  void allocate_column(size_t num_elements, size_t alignment = 16);
+  void allocate_bitmask(size_t num_elements, size_t alignment = 64);
   void make_empty(bool recurse = true);
   void copy(const Column<true> &input, bool recurse = true);
 

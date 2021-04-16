@@ -16,8 +16,8 @@
 
 #include "copy/tasks/scatter_by_slice.h"
 #include "copy/materialize.cuh"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "cudf_util/detail.h"
 #include "util/gpu_task_context.h"
@@ -66,8 +66,7 @@ using namespace Legion;
   std::vector<std::reference_wrapper<const cudf::scalar>> input_scalars_refs;
   std::vector<cudf::column_view> target_columns;
 
-  for (auto &req : args.requests)
-    target_columns.push_back(DeviceColumn<true>{req.target}.to_cudf_column(stream));
+  for (auto &req : args.requests) target_columns.push_back(to_cudf_column(req.target, stream));
 
   if (args.input_is_scalar)
     for (auto &req : args.requests) {
@@ -76,8 +75,7 @@ using namespace Legion;
       input_scalars.push_back(std::move(scalar));
     }
   else
-    for (auto &req : args.requests)
-      input_columns.push_back(DeviceColumn<true>{req.input}.to_cudf_column(stream));
+    for (auto &req : args.requests) input_columns.push_back(to_cudf_column(req.input, stream));
 
   if (target_begin > target_end) {
     for (auto idx = 0; idx < args.requests.size(); ++idx) {
@@ -85,21 +83,21 @@ using namespace Legion;
       auto &output = args.requests[idx].output;
 
       auto result = std::make_unique<cudf::column>(target, stream, &mr);
-      DeviceOutputColumn{output}.return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(output, std::move(result), stream, mr);
     }
   } else if (args.input_is_scalar) {
     auto scatter_map = materialize(
       Rect<1>(target_begin, target_end), 0, 1, stream, rmm::mr::get_current_device_resource());
-    auto result = cudf::detail::scatter(input_scalars_refs,
-                                        scatter_map->view(),
-                                        cudf::table_view{std::move(target_columns)},
-                                        false,
-                                        stream,
-                                        &mr);
+    auto results = cudf::detail::scatter(input_scalars_refs,
+                                         scatter_map->view(),
+                                         cudf::table_view{std::move(target_columns)},
+                                         false,
+                                         stream,
+                                         &mr)
+                     ->release();
 
-    auto result_view = result->view();
-    util::for_each(args.requests, result_view, [&](auto &req, auto &result) {
-      DeviceOutputColumn{req.output}.return_from_cudf_column(mr, result, stream);
+    util::for_each(args.requests, results, [&](auto &req, auto &result) {
+      from_cudf_column(req.output, std::move(result), stream, mr);
     });
   } else {
     for (auto idx = 0; idx < args.requests.size(); ++idx) {
@@ -109,7 +107,7 @@ using namespace Legion;
 
       auto result =
         cudf::detail::copy_range(source, target, 0, source.size(), target_begin, stream, &mr);
-      DeviceOutputColumn{output}.return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(output, std::move(result), stream, mr);
     }
   }
 }

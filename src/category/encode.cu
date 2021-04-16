@@ -47,6 +47,23 @@ std::unique_ptr<cudf::column> iota(cudf::size_type size, cudaStream_t stream)
   return std::move(out);
 }
 
+std::unique_ptr<cudf::column> to_dictionary_column(std::unique_ptr<cudf::column> &&codes)
+{
+  auto codes_size     = codes->size();
+  auto codes_contents = codes->release();
+
+  // Rearrange the data structure so that we can pass it to the return_from_cudf_column call
+  std::vector<std::unique_ptr<cudf::column>> children;
+  children.push_back(std::make_unique<cudf::column>(
+    cudf::data_type(cudf::type_id::UINT32), codes_size, std::move(*codes_contents.data)));
+  return std::make_unique<cudf::column>(cudf::data_type(cudf::type_id::DICTIONARY32),
+                                        codes_size,
+                                        rmm::device_buffer{},
+                                        std::move(*codes_contents.null_mask),
+                                        -1,
+                                        std::move(children));
+}
+
 std::unique_ptr<cudf::column> encode(const cudf::column_view &input,
                                      const cudf::column_view &dictionary,
                                      cudaStream_t stream,
@@ -80,7 +97,7 @@ std::unique_ptr<cudf::column> encode(const cudf::column_view &input,
                               mr)
       ->release();
 
-  return std::move(sorted[1]);
+  return to_dictionary_column(std::move(sorted[1]));
 }
 
 }  // namespace detail

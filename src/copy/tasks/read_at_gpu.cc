@@ -16,8 +16,8 @@
 
 #include "copy/tasks/read_at.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
 
@@ -54,11 +54,11 @@ using namespace Legion;
     return 0;
   } else {
     DeferredBufferAllocator mr;
-    auto cudf_input = DeviceColumn<true>{input}.to_cudf_column(stream);
+    auto cudf_input = to_cudf_column(input, stream);
     auto pos        = idx - shape.lo[0];
     auto sliced     = cudf::detail::slice(cudf_input, pos, pos + 1);
-    cudf::column copy(sliced, stream, &mr);
-    DeviceOutputColumn{output}.return_from_cudf_column(mr, copy.view(), stream);
+    auto copy       = std::make_unique<cudf::column>(sliced, stream, &mr);
+    from_cudf_column(output, std::move(copy), stream, mr);
     return 1;
   }
 }

@@ -16,7 +16,7 @@
 
 #include "io/tasks/to_csv.h"
 #include "io/file_util.h"
-#include "column/device_column.h"
+#include "cudf_util/column.h"
 #include "util/cuda_helper.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
@@ -47,8 +47,7 @@ using namespace Legion;
   auto stream = gpu_ctx.stream();
 
   std::vector<cudf::column_view> columns;
-  for (auto &column : args.columns)
-    columns.push_back(DeviceColumn<true>(column).to_cudf_column(stream));
+  for (auto &column : args.columns) columns.push_back(to_cudf_column(column, stream));
 
   auto task_id = static_cast<uint32_t>(task->index_point[0]);
   auto path    = args.partition

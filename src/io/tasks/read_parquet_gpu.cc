@@ -15,10 +15,9 @@
  */
 
 #include "io/tasks/read_parquet.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
-#include "util/zip_for_each.h"
 
 #include <cudf/null_mask.hpp>
 #include <cudf/io/parquet.hpp>
@@ -53,12 +52,6 @@ using ReadParquetArgs = ReadParquetTask::ReadParquetArgs;
   auto stream = gpu_ctx.stream();
 
   DeferredBufferAllocator mr;
-
-  auto return_columns = [&](auto result_view) {
-    util::for_each(args.columns, result_view, [&](auto &output, auto &input) {
-      DeviceOutputColumn{output}.return_from_cudf_column(mr, input, stream);
-    });
-  };
 
   int64_t task_id   = task->index_point[0];
   int64_t num_tasks = static_cast<int64_t>(task->index_domain.get_volume());
@@ -95,13 +88,13 @@ using ReadParquetArgs = ReadParquetTask::ReadParquetArgs;
 
         cudf::io::detail::parquet::reader reader{args.filenames, parquet_args, &mr};
         auto result = reader.read(parquet_args, stream);
-        return_columns(result.tbl->view());
+        from_cudf_table(args.columns, std::move(result.tbl), stream, mr);
       }
     } else {
       cudf::io::detail::parquet::reader reader{args.filenames, parquet_args, &mr};
       auto result = reader.read(parquet_args, stream);
-      return_columns(result.tbl->view());
-      num_rows = static_cast<int64_t>(result.tbl->num_rows());
+      num_rows    = static_cast<int64_t>(result.tbl->num_rows());
+      from_cudf_table(args.columns, std::move(result.tbl), stream, mr);
     }
   } else {
     int64_t num_files = args.filenames.size();
@@ -116,8 +109,8 @@ using ReadParquetArgs = ReadParquetTask::ReadParquetArgs;
     } else {
       cudf::io::detail::parquet::reader reader{filenames, parquet_args, &mr};
       auto result = reader.read(parquet_args, stream);
-      return_columns(result.tbl->view());
-      num_rows = static_cast<int64_t>(result.tbl->num_rows());
+      num_rows    = static_cast<int64_t>(result.tbl->num_rows());
+      from_cudf_table(args.columns, std::move(result.tbl), stream, mr);
     }
   }
 

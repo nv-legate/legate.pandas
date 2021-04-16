@@ -231,6 +231,37 @@ std::pair<cudf::table_view, std::unordered_map<uint32_t, cudf::column_view>> ext
   return std::make_pair(cudf::table_view(std::move(columns)), std::move(dictionaries));
 }
 
+std::pair<std::unique_ptr<cudf::table>, std::unordered_map<uint32_t, std::unique_ptr<cudf::column>>>
+extract_dictionaries(std::unique_ptr<cudf::table> &&input)
+{
+  std::vector<std::unique_ptr<cudf::column>> columns;
+  std::unordered_map<uint32_t, std::unique_ptr<cudf::column>> dictionaries;
+
+  auto input_columns = input->release();
+  for (auto idx = 0; idx < input_columns.size(); ++idx) {
+    auto &column = input_columns[idx];
+    if (column->type().id() == cudf::type_id::DICTIONARY32) {
+      // Hash out the column
+      auto size     = column->size();
+      auto contents = column->release();
+
+      // Set aside the dictionary that will later be merged back to the column
+      dictionaries[idx] = std::move(contents.children[1]);
+
+      // Combine the parent's bitmask with the codes column and put it in the table
+      auto &codes         = contents.children[0];
+      auto codes_contents = codes->release();
+
+      auto combined = std::make_unique<cudf::column>(
+        codes->type(), size, std::move(*codes_contents.data), std::move(*codes_contents.null_mask));
+      columns.push_back(std::move(combined));
+    } else
+      columns.push_back(std::move(column));
+  }
+
+  return std::make_pair(std::make_unique<cudf::table>(std::move(columns)), std::move(dictionaries));
+}
+
 cudf::table_view embed_dictionaries(
   const cudf::table_view &input,
   const std::unordered_map<uint32_t, cudf::column_view> &dictionaries)
@@ -254,6 +285,38 @@ cudf::table_view embed_dictionaries(
     }
   }
   return cudf::table_view(std::move(columns));
+}
+
+std::unique_ptr<cudf::table> embed_dictionaries(
+  std::unique_ptr<cudf::table> &&input,
+  const std::unordered_map<uint32_t, cudf::column_view> &dictionaries)
+{
+  std::vector<std::unique_ptr<cudf::column>> columns;
+
+  auto input_columns = input->release();
+  for (uint32_t idx = 0; idx < input_columns.size(); ++idx) {
+    auto &column = input_columns[idx];
+
+    auto finder = dictionaries.find(idx);
+    if (finder == dictionaries.end())
+      columns.push_back(std::move(column));
+    else {
+      auto codes_size     = column->size();
+      auto codes_contents = column->release();
+
+      std::vector<std::unique_ptr<cudf::column>> children;
+      children.push_back(std::make_unique<cudf::column>(
+        cudf::data_type(cudf::type_id::UINT32), codes_size, std::move(*codes_contents.data)));
+
+      columns.push_back(std::make_unique<cudf::column>(cudf::data_type(cudf::type_id::DICTIONARY32),
+                                                       codes_size,
+                                                       rmm::device_buffer{},
+                                                       std::move(*codes_contents.null_mask),
+                                                       -1,
+                                                       std::move(children)));
+    }
+  }
+  return std::make_unique<cudf::table>(std::move(columns));
 }
 
 }  // namespace comm

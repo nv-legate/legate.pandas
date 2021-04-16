@@ -15,7 +15,7 @@
  */
 
 #include "copy/tasks/fill.h"
-#include "column/device_column.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "cudf_util/types.h"
 #include "util/gpu_task_context.h"
@@ -74,9 +74,9 @@ struct Fill {
       auto result_mut = result->mutable_view();
       cudf::detail::fill_in_place(
         result_mut, 0, static_cast<cudf::size_type>(size), *p_scalar, stream);
-      DeviceOutputColumn(out).return_from_cudf_column(mr, result_mut, stream);
+      from_cudf_column(out, std::move(result), stream, mr);
     } else
-      DeviceOutputColumn(out).return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(out, std::move(result), stream, mr);
   }
 
   template <TypeCode CODE, std::enable_if_t<CODE == TypeCode::STRING> * = nullptr>
@@ -117,8 +117,9 @@ struct Fill {
 
     DeferredBufferAllocator mr;
     auto result = cudf::detail::repeat(
-      cudf::table_view{{to_repeat}}, static_cast<cudf::size_type>(size), stream, &mr);
-    DeviceOutputColumn{out}.return_from_cudf_column(mr, result->view().column(0), stream);
+                    cudf::table_view{{to_repeat}}, static_cast<cudf::size_type>(size), stream, &mr)
+                    ->release();
+    from_cudf_column(out, std::move(result[0]), stream, mr);
   }
 
   template <TypeCode CODE, std::enable_if_t<CODE == TypeCode::CAT32> * = nullptr>

@@ -17,8 +17,8 @@
 #include "binaryop/tasks/broadcast_binary_op.h"
 #include "binaryop/tasks/util.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "cudf_util/types.h"
 #include "util/gpu_task_context.h"
@@ -61,7 +61,7 @@ using namespace Legion;
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto in1                          = DeviceColumn<true>{in}.to_cudf_column(stream);
+  auto in1                          = to_cudf_column(in, stream);
   std::unique_ptr<cudf::scalar> in2 = to_cudf_scalar(scalar.raw_ptr(), scalar.code(), stream);
 
   if (in1.type().id() == cudf::type_id::DICTIONARY32)
@@ -83,9 +83,9 @@ using namespace Legion;
     auto p_fill_value =
       cudf::make_fixed_width_scalar<bool>(binop == cudf::binary_operator::NOT_EQUAL, stream);
     auto filled = cudf::detail::replace_nulls(result->view(), *p_fill_value, stream, &mr);
-    DeviceOutputColumn{out}.return_from_cudf_column(mr, filled->view(), stream);
+    from_cudf_column(out, std::move(filled), stream, mr);
   } else
-    DeviceOutputColumn{out}.return_from_cudf_column(mr, result->view(), stream);
+    from_cudf_column(out, std::move(result), stream, mr);
 }
 
 }  // namespace binaryop

@@ -15,10 +15,9 @@
  */
 
 #include "copy/tasks/concatenate.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
-#include "util/zip_for_each.h"
 
 #include <cudf/column/column.hpp>
 #include <cudf/table/table.hpp>
@@ -46,20 +45,16 @@ using namespace Legion;
 
   std::vector<cudf::table_view> input_tables;
   for (auto &input_table : args.input_tables) {
-    std::vector<cudf::column_view> columns;
-    for (auto &column : input_table)
-      columns.push_back(DeviceColumn<true>(column).to_cudf_column(stream));
-    input_tables.push_back(cudf::table_view{std::move(columns)});
+    input_tables.push_back(std::move(to_cudf_table(input_table, stream)));
   }
 
   DeferredBufferAllocator mr;
-  auto result = cudf::detail::concatenate(input_tables, stream, &mr);
+  auto result      = cudf::detail::concatenate(input_tables, stream, &mr);
+  auto result_size = static_cast<int64_t>(result->num_rows());
 
-  util::for_each(args.output_table, result->view(), [&](auto &output, auto &cudf_output) {
-    DeviceOutputColumn(output).return_from_cudf_column(mr, cudf_output, stream);
-  });
+  from_cudf_table(args.output_table, std::move(result), stream, mr);
 
-  return static_cast<int64_t>(result->num_rows());
+  return result_size;
 }
 
 }  // namespace copy

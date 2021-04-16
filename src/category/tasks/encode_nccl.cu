@@ -17,8 +17,8 @@
 #include "category/tasks/encode_nccl.h"
 #include "category/drop_duplicates.h"
 #include "category/encode.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "nccl/shuffle.h"
 #include "nccl/util.h"
 #include "util/gpu_task_context.h"
@@ -66,7 +66,7 @@ using namespace Legion;
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto input = DeviceColumn<true>{args.in}.to_cudf_column(stream);
+  auto input = to_cudf_column(args.in, stream);
 
   DeferredBufferAllocator output_mr;
   auto global_dedup = detail::drop_duplicates(cudf::table_view{{input}},
@@ -89,27 +89,17 @@ using namespace Legion;
       &output_mr);
   }
 
-  if (task->index_point[0] == 0)
-    DeviceOutputColumn{args.dict}.return_from_cudf_column(output_mr, dict_column->view(), stream);
-  else
-    args.dict.make_empty();
-
   if (!args.in.empty()) {
     DeferredBufferAllocator mr;
-    auto codes      = detail::encode(input, dict_column->view(), stream, &mr);
-    auto codes_view = codes->view();
-
-    // Rearrange the data structure so that we can pass it to the return_from_cudf_column call
-    cudf::column_view result(cudf::data_type(cudf::type_id::DICTIONARY32),
-                             codes_view.size(),
-                             nullptr,
-                             codes_view.null_mask(),
-                             -1,
-                             0,
-                             {codes_view});
-    DeviceOutputColumn{args.out}.return_from_cudf_column(mr, result, stream);
+    auto result = detail::encode(input, dict_column->view(), stream, &mr);
+    from_cudf_column(args.out, std::move(result), stream, mr);
   } else
     args.out.make_empty(true);
+
+  if (task->index_point[0] == 0)
+    from_cudf_column(args.dict, std::move(dict_column), stream, output_mr);
+  else
+    args.dict.make_empty();
 }
 
 static void __attribute__((constructor)) register_tasks(void)

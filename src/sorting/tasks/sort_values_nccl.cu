@@ -16,8 +16,8 @@
 
 #include "sorting/tasks/sort_values_nccl.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/bitmask.h"
+#include "cudf_util/column.h"
 #include "nccl/util.h"
 #include "nccl/shuffle.h"
 #include "util/cuda_helper.h"
@@ -144,13 +144,9 @@ SortArgs::SortArgs(const Task *task, SortValuesTaskArgs &args)
 {
   temp_mr = rmm::mr::get_current_device_resource();
 
-  std::vector<cudf::column_view> input_columns;
-  for (auto &column : args.input)
-    input_columns.push_back(DeviceColumn<true>{column}.to_cudf_column(stream()));
-
-  auto converted = comm::extract_dictionaries(cudf::table_view(std::move(input_columns)));
-  input          = std::move(converted.first);
-  dictionaries   = std::move(converted.second);
+  auto input_table              = to_cudf_table(args.input, stream());
+  auto converted                = comm::extract_dictionaries(input_table);
+  std::tie(input, dictionaries) = std::move(converted);
 
   for (auto asc : args.ascending) {
     column_order.push_back(asc ? cudf::order::ASCENDING : cudf::order::DESCENDING);
@@ -283,15 +279,12 @@ std::unique_ptr<cudf::table> sort(SortArgs &args)
   detail::SortArgs args(task, task_args);
 
   auto result      = detail::sort(args);
-  auto result_view = comm::embed_dictionaries(result->view(), args.dictionaries);
+  auto result_size = result->num_rows();
+  auto converted   = comm::embed_dictionaries(std::move(result), args.dictionaries);
 
-  util::for_each(result_view, task_args.output, [&](auto &cudf_output, auto &output) {
-    DeviceOutputColumn{output}.return_from_cudf_column(*args.output_mr, cudf_output, args.stream());
-  });
+  from_cudf_table(task_args.output, std::move(converted), args.stream(), *args.output_mr);
 
-  SYNC_AND_CHECK_STREAM(args.stream());
-
-  return result->num_rows();
+  return result_size;
 }
 
 static void __attribute__((constructor)) register_tasks(void)

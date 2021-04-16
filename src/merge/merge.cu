@@ -17,8 +17,8 @@
 #include <unordered_set>
 
 #include "merge/merge.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 #include "util/zip_for_each.h"
 
@@ -33,20 +33,6 @@ namespace legate {
 namespace pandas {
 namespace merge {
 
-using OutputColumns = std::vector<std::pair<bool, DeviceOutputColumn *>>;
-
-namespace detail {
-
-cudf::table_view to_cudf_table(const std::vector<Column<true>> &columns, cudaStream_t stream)
-{
-  std::vector<cudf::column_view> column_views;
-  for (auto &column : columns)
-    column_views.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
-  return cudf::table_view(column_views);
-}
-
-}  // namespace detail
-
 /*static*/ int64_t MergeTask::gpu_variant(const Legion::Task *task,
                                           const std::vector<Legion::PhysicalRegion> &regions,
                                           Legion::Context context,
@@ -60,8 +46,8 @@ cudf::table_view to_cudf_table(const std::vector<Column<true>> &columns, cudaStr
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto left_input  = detail::to_cudf_table(args.left_input, stream);
-  auto right_input = detail::to_cudf_table(args.right_input, stream);
+  auto left_input  = to_cudf_table(args.left_input, stream);
+  auto right_input = to_cudf_table(args.right_input, stream);
 
   DeferredBufferAllocator mr;
 
@@ -107,9 +93,10 @@ cudf::table_view to_cudf_table(const std::vector<Column<true>> &columns, cudaStr
 
   auto return_dictionary = [&](auto &output, auto &input) {
     if (input.type().id() == cudf::type_id::DICTIONARY32 && output.num_children() > 1) {
-      if (task->index_point[0] == 0)
-        DeviceOutputColumn(output.child(1)).return_from_cudf_column(mr, input.child(1), stream);
-      else
+      if (task->index_point[0] == 0) {
+        auto dict = std::make_unique<cudf::column>(input.child(1), stream, &mr);
+        from_cudf_column(output.child(1), std::move(dict), stream, mr);
+      } else
         output.child(1).make_empty();
     }
   };
@@ -121,34 +108,31 @@ cudf::table_view to_cudf_table(const std::vector<Column<true>> &columns, cudaStr
                                 : cudf::out_of_bounds_policy::NULLIFY;
 
   // If this is not an outer join, simply construct outputs by gathering respective inputs
-  std::unique_ptr<cudf::table> left_output;
-  std::unique_ptr<cudf::table> right_output;
+  std::vector<std::unique_ptr<cudf::column>> left_output;
+  std::vector<std::unique_ptr<cudf::column>> right_output;
   std::vector<std::unique_ptr<cudf::column>> temp_columns;
 
-  cudf::table_view left_output_view;
-  cudf::table_view right_output_view;
   if (args.join_type != JoinTypeCode::OUTER) {
-    left_output  = cudf::detail::gather(left_gather_target,
+    left_output = cudf::detail::gather(left_gather_target,
                                        left_indexer->begin(),
                                        left_indexer->end(),
                                        out_of_bounds_policy,
                                        stream,
-                                       &mr);
+                                       &mr)
+                    ->release();
     right_output = cudf::detail::gather(right_gather_target,
                                         right_indexer->begin(),
                                         right_indexer->end(),
                                         out_of_bounds_policy,
                                         stream,
-                                        &mr);
-
-    left_output_view  = left_output->view();
-    right_output_view = right_output->view();
+                                        &mr)
+                     ->release();
   }
   // For an outer join, we need to combine keys from both inputs
   else {
-    left_output = cudf::detail::gather(
+    auto left_output_tbl = cudf::detail::gather(
       left_input, left_indexer->begin(), left_indexer->end(), out_of_bounds_policy, stream, &mr);
-    right_output = cudf::detail::gather(
+    auto right_output_tbl = cudf::detail::gather(
       right_input, right_indexer->begin(), right_indexer->end(), out_of_bounds_policy, stream, &mr);
 
     std::vector<int32_t> left_common_indices;
@@ -158,55 +142,62 @@ cudf::table_view to_cudf_table(const std::vector<Column<true>> &columns, cudaStr
       right_common_indices.push_back(pair.second);
     }
 
-    auto left_common_keys  = left_output->view().select(left_common_indices);
-    auto right_common_keys = right_output->view().select(right_common_indices);
+    auto left_common_keys  = left_output_tbl->view().select(left_common_indices);
+    auto right_common_keys = right_output_tbl->view().select(right_common_indices);
 
-    std::vector<cudf::column_view> updated_keys;
-
+    std::vector<std::unique_ptr<cudf::column>> updated_keys;
     util::for_each(left_common_keys, right_common_keys, [&](auto &left, auto &right) {
-      temp_columns.push_back(cudf::detail::replace_nulls(left, right, stream, &mr));
-      updated_keys.push_back(temp_columns.back()->view());
+      updated_keys.push_back(cudf::detail::replace_nulls(left, right, stream, &mr));
     });
 
-    left_output_view = scatter_columns(
-      cudf::table_view(std::move(updated_keys)), left_common_indices, left_output->view());
-    right_output_view = right_output->view().select(args.right_indices());
+    left_output = left_output_tbl->release();
+    util::for_each(updated_keys, left_common_indices, [&](auto &updated_key, auto idx) {
+      left_output[idx] = std::move(updated_key);
+    });
+
+    auto right_output_all = right_output_tbl->release();
+    for (auto idx : args.right_indices()) right_output.push_back(std::move(right_output_all[idx]));
   }
 
   auto return_column = [&](auto &output, auto &cudf_output) {
-    if (cudf_output.type().id() == cudf::type_id::DICTIONARY32) {
-      if (cudf_output.size() == 0) {
+    if (cudf_output->type().id() == cudf::type_id::DICTIONARY32) {
+      if (cudf_output->size() == 0) {
         output.make_empty(false);
         output.child(0).make_empty();
       } else {
-        auto codes = cudf_output.child(0);
-        if (codes.type().id() != cudf::type_id::UINT32) {
-          temp_columns.push_back(
-            cudf::detail::cast(codes, cudf::data_type{cudf::type_id::UINT32}, stream, &mr));
-          codes = temp_columns.back()->view();
-        }
+        auto size     = cudf_output->size();
+        auto contents = cudf_output->release();
 
-        cudf::column_view codes_only(cudf_output.type(),
-                                     cudf_output.size(),
-                                     cudf_output.head(),
-                                     cudf_output.null_mask(),
-                                     -1,
-                                     0,
-                                     {codes});
-        DeviceOutputColumn(output).return_from_cudf_column(mr, codes_only, stream);
+        std::vector<std::unique_ptr<cudf::column>> children;
+
+        auto &codes = contents.children[0];
+        if (codes->type().id() != cudf::type_id::UINT32)
+          children.push_back(
+            cudf::detail::cast(codes->view(), cudf::data_type{cudf::type_id::UINT32}, stream, &mr));
+        else
+          children.push_back(std::move(codes));
+
+        auto codes_only =
+          std::make_unique<cudf::column>(cudf::data_type(cudf::type_id::DICTIONARY32),
+                                         size,
+                                         rmm::device_buffer{},
+                                         std::move(*contents.null_mask),
+                                         -1,
+                                         std::move(children));
+        from_cudf_column(output, std::move(codes_only), stream, mr);
       }
     } else {
-      if (cudf_output.size() == 0)
+      if (cudf_output->size() == 0)
         output.make_empty(true);
       else
-        DeviceOutputColumn(output).return_from_cudf_column(mr, cudf_output, stream);
+        from_cudf_column(output, std::move(cudf_output), stream, mr);
     }
   };
 
-  util::for_each(args.left_output, left_output_view, return_column);
-  util::for_each(args.right_output, right_output_view, return_column);
+  util::for_each(args.left_output, left_output, return_column);
+  util::for_each(args.right_output, right_output, return_column);
 
-  return left_output->num_rows();
+  return left_indexer->size();
 }
 
 }  // namespace merge

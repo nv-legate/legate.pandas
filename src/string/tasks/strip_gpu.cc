@@ -18,10 +18,10 @@
 
 #include "string/tasks/strip.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "deserializer.h"
 
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/detail.h"
 #include "cudf_util/scalar.h"
 #include "util/gpu_task_context.h"
@@ -58,12 +58,12 @@ namespace string {
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto in = DeviceColumn<true>{h_in}.to_cudf_column(stream);
+  auto in = to_cudf_column(h_in, stream);
 
   DeferredBufferAllocator mr;
   auto result =
     cudf::strings::detail::strip(in, cudf::strings::strip_type::BOTH, to_strip, stream, &mr);
-  DeviceOutputColumn{h_out}.return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(h_out, std::move(result), stream, mr);
 }
 
 }  // namespace string

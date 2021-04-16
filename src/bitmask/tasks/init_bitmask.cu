@@ -18,8 +18,8 @@
 
 #include "bitmask/tasks/init_bitmask.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 #include "util/type_dispatch.h"
 
@@ -121,9 +121,9 @@ std::unique_ptr<cudf::column> initialize_bitmask(cudf::column_view &&input,
 
   DeferredBufferAllocator mr;
 
-  auto input_view = DeviceColumn<true>(input).to_cudf_column(stream);
+  auto input_view = to_cudf_column(input, stream);
   auto result     = detail::initialize_bitmask(std::move(input_view), null_value, stream, &mr);
-  DeviceOutputColumn(bitmask).return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(bitmask, std::move(result), stream, mr);
 }
 
 }  // namespace bitmask

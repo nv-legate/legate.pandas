@@ -15,7 +15,7 @@
  */
 
 #include "reduction/tasks/scan.h"
-#include "column/device_column.h"
+#include "cudf_util/column.h"
 #include "cudf_util/detail.h"
 #include "cudf_util/types.h"
 #include "util/gpu_task_context.h"
@@ -49,7 +49,7 @@ using namespace Legion;
   auto null_policy = args.skipna ? cudf::null_policy::EXCLUDE : cudf::null_policy::INCLUDE;
 
   if (args.local) {
-    auto input = DeviceColumn<true>{args.input}.to_cudf_column(stream);
+    auto input = to_cudf_column(args.input, stream);
     {
       CompositeAllocator mr;
       mr.add<SingletonAllocator>(args.output.raw_column_untyped_write(), args.output.bytes());
@@ -91,7 +91,7 @@ using namespace Legion;
 
     auto default_resource = rmm::mr::get_current_device_resource();
 
-    auto buffer     = DeviceColumn<true>{args.read_buffer}.to_cudf_column(stream);
+    auto buffer     = to_cudf_column(args.read_buffer, stream);
     auto global_agg = cudf::detail::scan(buffer,
                                          to_cudf_agg(args.code),
                                          cudf::scan_type::INCLUSIVE,
@@ -99,7 +99,7 @@ using namespace Legion;
                                          stream,
                                          default_resource);
     {
-      auto output    = DeviceColumn<false>{args.output}.to_cudf_column(stream);
+      auto output    = to_cudf_column(args.output, stream);
       auto has_nulls = output.has_nulls();
 
       auto rhs = cudf::detail::get_element(

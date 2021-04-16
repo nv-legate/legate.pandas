@@ -16,10 +16,10 @@
 
 #include "string/tasks/to_datetime.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 #include "util/zip_for_each.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "deserializer.h"
 
 #include <cudf/types.hpp>
@@ -54,12 +54,12 @@ using namespace Legion;
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto in   = DeviceColumn<true>{h_in}.to_cudf_column(stream);
+  auto in   = to_cudf_column(h_in, stream);
   auto type = cudf::data_type{cudf::type_id::TIMESTAMP_NANOSECONDS};
 
   DeferredBufferAllocator mr;
   auto result = cudf::strings::detail::to_timestamps(in, type, format, stream, &mr);
-  DeviceOutputColumn{h_out}.return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(h_out, std::move(result), stream, mr);
 }
 
 }  // namespace string
