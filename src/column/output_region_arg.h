@@ -24,11 +24,15 @@ namespace pandas {
 class OutputRegionArg {
  public:
   OutputRegionArg();
-  OutputRegionArg(const OutputRegionArg &other) = default;
   OutputRegionArg(TypeCode code, const Legion::OutputRegion &out, Legion::FieldID fid);
+  ~OutputRegionArg();
 
  public:
-  void destroy();
+  OutputRegionArg(const OutputRegionArg &other) = delete;
+  OutputRegionArg(OutputRegionArg &&other);
+
+  OutputRegionArg &operator=(const OutputRegionArg &other) = delete;
+  OutputRegionArg &operator                                =(OutputRegionArg &&other);
 
  public:
   void allocate(size_t num_elements, size_t alignment = 16);

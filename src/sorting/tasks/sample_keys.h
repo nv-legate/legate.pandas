@@ -28,8 +28,6 @@ namespace sorting {
 class SampleKeysTask : public PandasTask<SampleKeysTask> {
  public:
   struct SampleKeysArgs {
-    ~SampleKeysArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using InputTable  = std::vector<Column<true>>;

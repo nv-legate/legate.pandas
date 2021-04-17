@@ -36,15 +36,6 @@ void ScatterByMaskTask::ScatterByMaskTaskArgs::sanity_check(void)
   }
 }
 
-void ScatterByMaskTask::ScatterByMaskTaskArgs::cleanup(void)
-{
-  for (auto &req : requests) {
-    req.output.destroy();
-    req.target.destroy();
-    if (!input_is_scalar) req.input.destroy();
-  }
-}
-
 using ColumnView = pandas::detail::Column;
 
 namespace detail {

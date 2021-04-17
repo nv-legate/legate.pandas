@@ -28,8 +28,6 @@ namespace groupby {
 class GroupByReductionTask : public PandasTask<GroupByReductionTask> {
  public:
   struct GroupByArgs {
-    ~GroupByArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     typedef std::vector<Column<true>> ColumnsRO;

@@ -52,7 +52,7 @@ namespace category {
     Column<true> in;
     deserialize(ctx, in);
     if (!in.valid()) break;
-    inputs.push_back(in);
+    inputs.push_back(std::move(in));
   }
 
   GPUTaskContext gpu_ctx{};

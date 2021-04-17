@@ -44,8 +44,6 @@ namespace detail {
 
 // Task arguments
 struct SortValuesTaskArgs {
-  ~SortValuesTaskArgs(void) { cleanup(); }
-  void cleanup(void);
   void sanity_check(void);
 
   int64_t volume;
@@ -63,12 +61,6 @@ struct SortValuesTaskArgs {
 void SortValuesTaskArgs::sanity_check(void)
 {
   for (auto &column : input) assert(input[0].shape() == column.shape());
-}
-
-void SortValuesTaskArgs::cleanup(void)
-{
-  for (auto &column : input) column.destroy();
-  for (auto &column : output) column.destroy();
 }
 
 void deserialize(Deserializer &ctx, SortValuesTaskArgs &args)

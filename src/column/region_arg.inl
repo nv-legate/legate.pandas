@@ -39,9 +39,34 @@ RegionArg<READ, DIM>::RegionArg(TypeCode c, const Legion::PhysicalRegion &pr, Le
 }
 
 template <bool READ, int DIM>
-void RegionArg<READ, DIM>::destroy(void)
+RegionArg<READ, DIM>::~RegionArg()
 {
   if (nullptr != accessor_) delete_accessor<DIM>(code, READ, accessor_);
+}
+
+template <bool READ, int DIM>
+RegionArg<READ, DIM>::RegionArg(RegionArg<READ, DIM> &&other)
+  : code(other.code),
+    pr_(other.pr_),
+    fid_(other.fid_),
+    has_rect(other.has_rect),
+    accessor_(other.accessor_),
+    domain_(other.domain_)
+{
+  other.accessor_ = nullptr;
+}
+
+template <bool READ, int DIM>
+RegionArg<READ, DIM> &RegionArg<READ, DIM>::operator=(RegionArg<READ, DIM> &&other)
+{
+  code            = other.code;
+  pr_             = other.pr_;
+  fid_            = other.fid_;
+  has_rect        = other.has_rect;
+  accessor_       = other.accessor_;
+  domain_         = other.domain_;
+  other.accessor_ = nullptr;
+  return *this;
 }
 
 template <bool READ, int DIM>

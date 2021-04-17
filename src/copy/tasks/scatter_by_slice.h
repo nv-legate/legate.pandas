@@ -26,8 +26,6 @@ namespace copy {
 class ScatterBySliceTask : public PandasTask<ScatterBySliceTask> {
  public:
   struct ScatterBySliceTaskArgs {
-    ~ScatterBySliceTaskArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     struct ScatterBySliceArg {

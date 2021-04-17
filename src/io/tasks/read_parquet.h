@@ -28,9 +28,6 @@ namespace parquet {
 class ReadParquetTask : public PandasTask<ReadParquetTask> {
  public:
   struct ReadParquetArgs {
-    ~ReadParquetArgs(void) { cleanup(); }
-    void cleanup(void);
-
     using Columns = std::vector<OutputColumn>;
 
     std::vector<std::string> filenames;

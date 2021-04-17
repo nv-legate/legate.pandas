@@ -28,8 +28,6 @@ namespace copy {
 class ConcatenateTask : public PandasTask<ConcatenateTask> {
  public:
   struct ConcatenateArgs {
-    ~ConcatenateArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using Table = std::vector<Column<true>>;

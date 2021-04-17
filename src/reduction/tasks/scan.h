@@ -27,8 +27,6 @@ namespace reduction {
 class ScanTask : public PandasTask<ScanTask> {
  public:
   struct ScanArgs {
-    ~ScanArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     bool local;

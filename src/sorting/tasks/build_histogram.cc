@@ -36,12 +36,6 @@ void BuildHistogramTask::BuildHistogramArgs::sanity_check(void)
   for (auto &column : input) assert(input[0].shape() == column.shape());
 }
 
-void BuildHistogramTask::BuildHistogramArgs::cleanup(void)
-{
-  for (auto &column : samples) column.destroy();
-  for (auto &column : input) column.destroy();
-}
-
 static void histogram_to_ranges(BuildHistogramArgs &args,
                                 std::vector<int64_t> &offsets,
                                 const std::vector<uint32_t> &hist)

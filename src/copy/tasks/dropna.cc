@@ -37,14 +37,6 @@ void DropNaTask::DropNaTaskArgs::sanity_check(void)
   for (auto &pair : pairs) assert(input(pair).shape() == input(pairs[0]).shape());
 }
 
-void DropNaTask::DropNaTaskArgs::cleanup(void)
-{
-  for (auto &pair : pairs) {
-    output(pair).destroy();
-    input(pair).destroy();
-  }
-}
-
 using ColumnView = detail::Column;
 
 namespace detail {

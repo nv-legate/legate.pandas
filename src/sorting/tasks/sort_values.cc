@@ -37,12 +37,6 @@ void SortValuesTask::SortValuesArgs::sanity_check(void)
   for (auto &column : input) assert(input[0].shape() == column.shape());
 }
 
-void SortValuesTask::SortValuesArgs::cleanup(void)
-{
-  for (auto &column : input) column.destroy();
-  for (auto &column : output) column.destroy();
-}
-
 /*static*/ int64_t SortValuesTask::cpu_variant(const Task *task,
                                                const std::vector<PhysicalRegion> &regions,
                                                Context context,

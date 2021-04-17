@@ -40,11 +40,6 @@ using ToParquetArgs = ToParquetTask::ToParquetArgs;
 using ColumnView    = detail::Column;
 using TableView     = detail::Table;
 
-void ToParquetTask::ToParquetArgs::cleanup(void)
-{
-  for (auto &column : columns) column.destroy();
-}
-
 /*static*/ void ToParquetTask::cpu_variant(const Task *task,
                                            const std::vector<PhysicalRegion> &regions,
                                            Context context,

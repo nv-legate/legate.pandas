@@ -39,8 +39,6 @@ using CudfColumns = std::vector<cudf::column_view>;
 namespace detail {
 
 struct GlobalPartitionArgs {
-  ~GlobalPartitionArgs(void) { cleanup(); }
-  void cleanup(void);
   void sanity_check(void);
 
   uint32_t num_pieces;
@@ -55,12 +53,6 @@ struct GlobalPartitionArgs {
 void GlobalPartitionArgs::sanity_check(void)
 {
   for (auto &column : input) assert(input[0].shape() == column.shape());
-}
-
-void GlobalPartitionArgs::cleanup(void)
-{
-  for (auto &column : input) column.destroy();
-  for (auto &column : output) column.destroy();
 }
 
 void deserialize(Deserializer &ctx, GlobalPartitionArgs &args)

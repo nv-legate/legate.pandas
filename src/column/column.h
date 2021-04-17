@@ -44,11 +44,18 @@ class Column {
   friend void deserialize(Deserializer &ctx, Column<_READ> &column);
 
  public:
-  Column()                          = default;
-  Column(const Column<READ> &other) = default;
+  Column()  = default;
+  ~Column() = default;
+
+  Column(const Column<READ> &other) = delete;
+  Column(Column<READ> &&other);
+
+  Column &operator=(const Column<READ> &other) = delete;
+  Column &operator                             =(Column<READ> &&other);
 
  public:
   inline auto &child(uint32_t idx) const { return children_[idx]; }
+  inline auto &child(uint32_t idx) { return children_[idx]; }
   inline auto num_children() const { return children_.size(); }
 
  public:
@@ -58,9 +65,6 @@ class Column {
   inline bool valid() const { return column_.valid(); }
   inline TypeCode code() const { return column_.code; }
   inline bool is_meta() const { return column_.is_meta(); }
-
- public:
-  inline void destroy();
 
  public:
   template <typename T>
@@ -105,7 +109,7 @@ class Column {
 
  protected:
   RegionArg<READ> column_{};
-  std::shared_ptr<RegionArg<READ>> bitmask_{nullptr};
+  std::unique_ptr<RegionArg<READ>> bitmask_{nullptr};
   std::vector<Column<READ>> children_{};
   size_t num_elements_{0};
   int32_t null_count_{-1};
@@ -117,11 +121,17 @@ class OutputColumn {
 
  public:
   OutputColumn()                          = default;
-  OutputColumn(const OutputColumn &other) = default;
+  ~OutputColumn()                         = default;
+  OutputColumn(const OutputColumn &other) = delete;
+  OutputColumn(OutputColumn &&other);
 
  public:
-  inline auto &child(uint32_t idx) { return children_[idx]; }
-  inline auto &child(uint32_t idx) const { return children_[idx]; }
+  OutputColumn &operator=(const OutputColumn &other) = delete;
+  OutputColumn &operator                             =(OutputColumn &&other);
+
+ public:
+  inline OutputColumn &child(uint32_t idx) { return children_[idx]; }
+  inline const OutputColumn &child(uint32_t idx) const { return children_[idx]; }
   inline auto num_children() const { return children_.size(); }
 
  public:
@@ -164,12 +174,9 @@ class OutputColumn {
   inline TypeCode code() const { return column_.code; }
   inline bool nullable() const { return nullptr != bitmask_; }
 
- public:
-  void destroy();
-
  protected:
   OutputRegionArg column_{};
-  std::shared_ptr<OutputRegionArg> bitmask_{nullptr};
+  std::unique_ptr<OutputRegionArg> bitmask_{nullptr};
   std::vector<OutputColumn> children_{};
   size_t num_elements_{-1UL};
 };

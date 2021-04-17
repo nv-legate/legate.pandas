@@ -31,11 +31,6 @@ using namespace Legion;
 
 using ToCSVArgs = ToCSVTask::ToCSVArgs;
 
-void ToCSVTask::ToCSVArgs::cleanup(void)
-{
-  for (auto &column : columns) column.destroy();
-}
-
 using ColumnView = detail::Column;
 
 namespace detail {

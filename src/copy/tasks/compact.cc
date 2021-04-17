@@ -37,15 +37,6 @@ void CompactTask::CompactTaskArgs::sanity_check(void)
   for (auto &pair : pairs) assert(input(pair).shape() == mask.shape());
 }
 
-void CompactTask::CompactTaskArgs::cleanup(void)
-{
-  mask.destroy();
-  for (auto &pair : pairs) {
-    output(pair).destroy();
-    input(pair).destroy();
-  }
-}
-
 using ColumnView = detail::Column;
 
 namespace detail {

@@ -27,13 +27,30 @@ void deserialize(Deserializer &ctx, OutputColumn &column)
   bool nullable = false;
   deserialize(ctx, nullable);
   if (nullable) {
-    column.bitmask_ = std::make_shared<typename decltype(column.bitmask_)::element_type>();
+    column.bitmask_ = std::make_unique<typename decltype(column.bitmask_)::element_type>();
     deserialize(ctx, *column.bitmask_);
   }
   uint32_t num_children;
   deserialize(ctx, num_children);
   column.children_.resize(num_children);
   for (auto &child : column.children_) deserialize(ctx, child);
+}
+
+OutputColumn::OutputColumn(OutputColumn &&other)
+  : column_(std::move(other.column_)),
+    bitmask_(std::move(other.bitmask_)),
+    children_(std::move(other.children_)),
+    num_elements_(other.num_elements_)
+{
+}
+
+OutputColumn &OutputColumn::operator=(OutputColumn &&other)
+{
+  column_       = std::move(other.column_);
+  bitmask_      = std::move(other.bitmask_);
+  children_     = std::move(other.children_);
+  num_elements_ = other.num_elements_;
+  return *this;
 }
 
 void *OutputColumn::raw_column_untyped() const { return column_.untyped_ptr(); }
@@ -220,12 +237,6 @@ void OutputColumn::copy(const Column<true> &input, bool recurse)
   if (recurse)
     for (auto idx = 0; idx < children_.size(); ++idx)
       children_[idx].copy(input.child(idx), recurse);
-}
-
-void OutputColumn::destroy()
-{
-  column_.destroy();
-  if (nullable()) bitmask_->destroy();
 }
 
 }  // namespace pandas

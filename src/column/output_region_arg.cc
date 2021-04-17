@@ -72,9 +72,25 @@ OutputRegionArg::OutputRegionArg(TypeCode code,
 {
 }
 
-void OutputRegionArg::destroy()
+OutputRegionArg::~OutputRegionArg()
 {
   if (nullptr != buffer_) type_dispatch_primitive_only(code, detail::Destroy{}, buffer_);
+}
+
+OutputRegionArg::OutputRegionArg(OutputRegionArg &&other)
+  : code(other.code), out_(other.out_), fid_(other.fid_), buffer_(other.buffer_)
+{
+  other.buffer_ = nullptr;
+}
+
+OutputRegionArg &OutputRegionArg::operator=(OutputRegionArg &&other)
+{
+  code          = other.code;
+  out_          = other.out_;
+  fid_          = other.fid_;
+  buffer_       = other.buffer_;
+  other.buffer_ = nullptr;
+  return *this;
 }
 
 void OutputRegionArg::allocate(size_t num_elements, size_t alignment)

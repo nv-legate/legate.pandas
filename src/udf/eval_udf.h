@@ -26,8 +26,6 @@ namespace udf {
 class EvalUDFTask : public PandasTask<EvalUDFTask> {
  public:
   struct EvalUDFTaskArgs {
-    ~EvalUDFTaskArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     uint64_t func_ptr;
