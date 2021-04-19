@@ -16,9 +16,8 @@
 
 #include "sorting/tasks/sample_keys.h"
 #include "sorting/utilities.h"
-#include "column/device_column.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
-#include "util/zip_for_each.h"
 
 #include <cudf/detail/gather.hpp>
 
@@ -27,8 +26,6 @@ namespace pandas {
 namespace sorting {
 
 using namespace Legion;
-
-using CudfColumns = std::vector<cudf::column_view>;
 
 /*static*/ void SampleKeysTask::gpu_variant(const Task *task,
                                             const std::vector<PhysicalRegion> &regions,
@@ -56,8 +53,8 @@ using CudfColumns = std::vector<cudf::column_view>;
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  CudfColumns keys;
-  for (auto &column : args.input) keys.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
+  std::vector<cudf::column_view> keys;
+  for (auto &column : args.input) keys.push_back(to_cudf_column(column, stream));
 
   cudf::column_view gather_map{cudf::data_type{cudf::type_id::INT64},
                                static_cast<cudf::size_type>(num_samples),
@@ -71,9 +68,7 @@ using CudfColumns = std::vector<cudf::column_view>;
                                      cudf::detail::negative_index_policy::NOT_ALLOWED,
                                      stream,
                                      &mr);
-  util::for_each(args.output, result->view(), [&](auto &output, auto &cudf_output) {
-    DeviceOutputColumn(output).return_from_cudf_column(mr, cudf_output, stream);
-  });
+  from_cudf_table(args.output, std::move(result), stream, mr);
 }
 
 }  // namespace sorting

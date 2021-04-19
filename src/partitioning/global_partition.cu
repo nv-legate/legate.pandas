@@ -18,12 +18,11 @@
 
 #include "partitioning/global_partition.h"
 
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "nccl/shuffle.h"
 #include "util/cuda_helper.h"
 #include "util/gpu_task_context.h"
-#include "util/zip_for_each.h"
 
 #include <cudf/partitioning.hpp>
 #include <cudf/table/table.hpp>
@@ -39,18 +38,13 @@ using CudfColumns = std::vector<cudf::column_view>;
 
 namespace detail {
 
-using InputTable  = std::vector<Column<true>>;
-using OutputTable = std::vector<OutputColumn>;
-
 struct GlobalPartitionArgs {
-  ~GlobalPartitionArgs(void) { cleanup(); }
-  void cleanup(void);
   void sanity_check(void);
 
   uint32_t num_pieces;
   std::vector<int32_t> key_indices;
-  InputTable input;
-  OutputTable output;
+  std::vector<Column<true>> input;
+  std::vector<OutputColumn> output;
   ncclComm_t *comm;
 
   friend void deserialize(Deserializer &ctx, GlobalPartitionArgs &args);
@@ -59,12 +53,6 @@ struct GlobalPartitionArgs {
 void GlobalPartitionArgs::sanity_check(void)
 {
   for (auto &column : input) assert(input[0].shape() == column.shape());
-}
-
-void GlobalPartitionArgs::cleanup(void)
-{
-  for (auto &column : input) column.destroy();
-  for (auto &column : output) column.destroy();
 }
 
 void deserialize(Deserializer &ctx, GlobalPartitionArgs &args)
@@ -96,11 +84,7 @@ void deserialize(Deserializer &ctx, GlobalPartitionArgs &args)
   auto stream = gpu_ctx.stream();
 
   // First, hash partition the input table
-  CudfColumns columns;
-  for (auto const &column : args.input)
-    columns.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
-
-  cudf::table_view table{std::move(columns)};
+  cudf::table_view table = to_cudf_table(args.input, stream);
 
   auto num_pieces  = args.num_pieces;
   auto mr          = rmm::mr::get_current_device_resource();
@@ -130,19 +114,17 @@ void deserialize(Deserializer &ctx, GlobalPartitionArgs &args)
   coord_t task_id = task->index_point[0];
   DeferredBufferAllocator output_mr;
   auto result      = comm::shuffle(table_to_send, splits, task_id, args.comm, stream, &output_mr);
-  auto result_view = result->view();
+  auto result_size = static_cast<int64_t>(result->num_rows());
 
   // Finally, bind the result to output columns
-  auto recovered = comm::embed_dictionaries(result_view, converted.second);
-  util::for_each(args.output, recovered, [&](auto &output, auto &cudf_output) {
-    DeviceOutputColumn(output).return_from_cudf_column(output_mr, cudf_output, stream);
-  });
+  auto recovered = comm::embed_dictionaries(std::move(result), converted.second);
+  from_cudf_table(args.output, std::move(recovered), stream, output_mr);
 
   // Make sure all computation is done before we clean up temporary allocations
   // (which will happen when exiting this function)
   SYNC_AND_CHECK_STREAM(stream);
 
-  return result_view.num_rows();
+  return result_size;
 }
 
 static void __attribute__((constructor)) register_tasks(void)

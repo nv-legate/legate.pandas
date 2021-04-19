@@ -37,12 +37,6 @@ void SampleKeysTask::SampleKeysArgs::sanity_check(void)
   util::for_each(input, output, [&](auto &in, auto &out) { assert(in.code() == out.code()); });
 }
 
-void SampleKeysTask::SampleKeysArgs::cleanup(void)
-{
-  for (auto &column : input) column.destroy();
-  for (auto &column : output) column.destroy();
-}
-
 /*static*/ void SampleKeysTask::cpu_variant(const Task *task,
                                             const std::vector<PhysicalRegion> &regions,
                                             Context context,

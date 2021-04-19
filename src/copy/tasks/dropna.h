@@ -26,8 +26,6 @@ namespace copy {
 class DropNaTask : public PandasTask<DropNaTask> {
  public:
   struct DropNaTaskArgs {
-    ~DropNaTaskArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using DropNaArg = std::pair<OutputColumn, Column<true>>;

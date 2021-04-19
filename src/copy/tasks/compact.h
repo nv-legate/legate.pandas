@@ -27,8 +27,6 @@ namespace copy {
 class CompactTask : public PandasTask<CompactTask> {
  public:
   struct CompactTaskArgs {
-    ~CompactTaskArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using CompactArg = std::pair<OutputColumn, Column<true>>;

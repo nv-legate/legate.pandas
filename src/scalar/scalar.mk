@@ -13,4 +13,4 @@
 # limitations under the License.
 #
 
-GEN_SRC += column/device_column.cc
+GEN_SRC += scalar/scalar.cc

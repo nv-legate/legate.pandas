@@ -28,9 +28,6 @@ namespace parquet {
 class ToParquetTask : public PandasTask<ToParquetTask> {
  public:
   struct ToParquetArgs {
-    ~ToParquetArgs(void) { cleanup(); }
-    void cleanup(void);
-
     FromFuture<int32_t> err_mkdir;
     uint32_t num_pieces;
     CompressionType compression;

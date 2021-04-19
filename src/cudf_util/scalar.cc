@@ -56,10 +56,8 @@ struct FromCudfScalar {
   Scalar operator()(std::unique_ptr<cudf::scalar> &&in, cudaStream_t stream)
   {
     auto valid = in->is_valid(stream);
-    auto value = static_cast<std::string *>(nullptr);
-    if (valid)
-      value = new std::string(
-        static_cast<const cudf::scalar_type_t<std::string> *>(in.get())->to_string(stream));
+    if (!valid) return Scalar(TypeCode::STRING);
+    auto value = static_cast<const cudf::scalar_type_t<std::string> *>(in.get())->to_string(stream);
     return Scalar(valid, value);
   }
 

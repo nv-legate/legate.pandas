@@ -16,8 +16,8 @@
 
 #include "unaryop/tasks/unary_op.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
 
@@ -70,12 +70,12 @@ cudf::unary_operator to_cudf_unary_operator(UnaryOpCode op_code)
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto in_col = DeviceColumn<true>{in}.to_cudf_column(stream);
+  auto in_col = to_cudf_column(in, stream);
 
   DeferredBufferAllocator mr;
   auto uop    = detail::to_cudf_unary_operator(op_code);
   auto result = cudf::detail::unary_operation(in_col, uop, stream, &mr);
-  DeviceOutputColumn{out}.return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(out, std::move(result), stream, mr);
 }
 
 }  // namespace unaryop

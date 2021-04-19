@@ -27,8 +27,16 @@ template <bool READ, int DIM = 1>
 class RegionArg {
  public:
   RegionArg();
-  RegionArg(const RegionArg &other) = default;
   RegionArg(TypeCode code, const Legion::PhysicalRegion &pr, Legion::FieldID fid);
+  ~RegionArg();
+
+ public:
+  RegionArg(RegionArg &&other) noexcept;
+  RegionArg &operator=(RegionArg &&other) noexcept;
+
+ private:
+  RegionArg(const RegionArg &other) = delete;
+  RegionArg &operator=(const RegionArg &other) = delete;
 
  public:
   const Legion::Rect<DIM> &shape() const
@@ -50,7 +58,6 @@ class RegionArg {
   size_t bytes() const;
   inline bool valid() const { return code != TypeCode::INVALID; }
   inline bool is_meta() const { return code == TypeCode::STRING || code == TypeCode::CAT32; }
-  void destroy(void);
 
  public:
   void set_rect(const Legion::Rect<DIM> &rect);

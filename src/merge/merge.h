@@ -27,8 +27,6 @@ namespace merge {
 class MergeTask : public PandasTask<MergeTask> {
  public:
   struct MergeArgs {
-    ~MergeArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     std::vector<int32_t> left_indices() const;

@@ -28,9 +28,6 @@ namespace csv {
 class ToCSVTask : public PandasTask<ToCSVTask> {
  public:
   struct ToCSVArgs {
-    ~ToCSVArgs(void) { cleanup(); }
-    void cleanup(void);
-
     uint32_t num_pieces;
     uint32_t chunksize;
     bool partition;

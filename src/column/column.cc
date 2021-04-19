@@ -27,13 +27,30 @@ void deserialize(Deserializer &ctx, OutputColumn &column)
   bool nullable = false;
   deserialize(ctx, nullable);
   if (nullable) {
-    column.bitmask_ = std::make_shared<typename decltype(column.bitmask_)::element_type>();
+    column.bitmask_ = std::make_unique<typename decltype(column.bitmask_)::element_type>();
     deserialize(ctx, *column.bitmask_);
   }
   uint32_t num_children;
   deserialize(ctx, num_children);
   column.children_.resize(num_children);
   for (auto &child : column.children_) deserialize(ctx, child);
+}
+
+OutputColumn::OutputColumn(OutputColumn &&other) noexcept
+  : column_(std::move(other.column_)),
+    bitmask_(std::move(other.bitmask_)),
+    children_(std::move(other.children_)),
+    num_elements_(other.num_elements_)
+{
+}
+
+OutputColumn &OutputColumn::operator=(OutputColumn &&other) noexcept
+{
+  column_       = std::move(other.column_);
+  bitmask_      = std::move(other.bitmask_);
+  children_     = std::move(other.children_);
+  num_elements_ = other.num_elements_;
+  return *this;
 }
 
 void *OutputColumn::raw_column_untyped() const { return column_.untyped_ptr(); }
@@ -53,13 +70,7 @@ Bitmask::AllocType *OutputColumn::raw_bitmask() const
 #endif
   return bitmask_->ptr<Bitmask::AllocType>();
 }
-size_t OutputColumn::elem_size() const
-{
-#ifdef DEBUG_PANDAS
-  assert(valid());
-#endif
-  return size_of_type(code());
-}
+size_t OutputColumn::elem_size() const { return size_of_type(code()); }
 
 namespace detail {
 
@@ -159,17 +170,22 @@ void OutputColumn::return_from_view(alloc::DeferredBufferAllocator &allocator, d
     child(idx).return_from_view(allocator, view.child(idx));
 }
 
-void OutputColumn::allocate(size_t num_elements,
-                            bool recurse,
-                            size_t alignment,
-                            size_t bitmask_alignment)
+void OutputColumn::return_column_from_instance(Realm::RegionInstance instance, size_t num_elements)
 {
 #ifdef DEBUG_PANDAS
   assert(!valid());
 #endif
   num_elements_ = num_elements;
-  if (column_.valid()) column_.allocate(num_elements, alignment);
-  if (nullable()) bitmask_->allocate(num_elements, bitmask_alignment);
+  column_.return_from_instance(instance, num_elements, elem_size());
+}
+
+void OutputColumn::allocate(size_t num_elements,
+                            bool recurse,
+                            size_t alignment,
+                            size_t bitmask_alignment)
+{
+  allocate_column(num_elements, alignment);
+  allocate_bitmask(num_elements, bitmask_alignment);
 
   if (recurse) {
     switch (code()) {
@@ -188,6 +204,23 @@ void OutputColumn::allocate(size_t num_elements,
   }
 }
 
+void OutputColumn::allocate_column(size_t num_elements, size_t alignment)
+{
+#ifdef DEBUG_PANDAS
+  assert(!valid());
+#endif
+  num_elements_ = num_elements;
+  column_.allocate(num_elements, alignment);
+}
+
+void OutputColumn::allocate_bitmask(size_t num_elements, size_t alignment)
+{
+#ifdef DEBUG_PANDAS
+  assert(valid() && num_elements_ == num_elements);
+#endif
+  if (nullable()) bitmask_->allocate(num_elements, alignment);
+}
+
 void OutputColumn::make_empty(bool recurse)
 {
   allocate(0);
@@ -204,12 +237,6 @@ void OutputColumn::copy(const Column<true> &input, bool recurse)
   if (recurse)
     for (auto idx = 0; idx < children_.size(); ++idx)
       children_[idx].copy(input.child(idx), recurse);
-}
-
-void OutputColumn::destroy()
-{
-  column_.destroy();
-  if (nullable()) bitmask_->destroy();
 }
 
 }  // namespace pandas

@@ -16,7 +16,6 @@
 include binaryop/binaryop_gpu.mk
 include bitmask/bitmask_gpu.mk
 include category/category_gpu.mk
-include column/column_gpu.mk
 include copy/copy_gpu.mk
 include cudf_util/cudf_util.mk
 include datetime/datetime_gpu.mk

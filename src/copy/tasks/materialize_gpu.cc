@@ -18,8 +18,8 @@
 #include "copy/materialize.cuh"
 
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
 
@@ -54,7 +54,7 @@ using namespace Legion;
 
   DeferredBufferAllocator mr;
   auto result = materialize(shape, start.value(), step.value(), stream, &mr);
-  DeviceOutputColumn{out}.return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(out, std::move(result), stream, mr);
 }
 
 }  // namespace copy

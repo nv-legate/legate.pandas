@@ -17,7 +17,7 @@
 #include <numeric>
 
 #include "sorting/tasks/build_histogram.h"
-#include "column/device_column.h"
+#include "cudf_util/column.h"
 #include "util/cuda_helper.h"
 #include "util/gpu_task_context.h"
 
@@ -36,8 +36,6 @@ using namespace Legion;
 using Table              = BuildHistogramTask::BuildHistogramArgs::Table;
 using BuildHistogramArgs = BuildHistogramTask::BuildHistogramArgs;
 
-using CudfColumns = std::vector<cudf::column_view>;
-
 /*static*/ void BuildHistogramTask::gpu_variant(const Task *task,
                                                 const std::vector<PhysicalRegion> &regions,
                                                 Context context,
@@ -53,9 +51,8 @@ using CudfColumns = std::vector<cudf::column_view>;
 
   auto num_keys = args.input.size();
 
-  CudfColumns input_samples;
-  for (auto &column : args.samples)
-    input_samples.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
+  std::vector<cudf::column_view> input_samples;
+  for (auto &column : args.samples) input_samples.push_back(to_cudf_column(column, stream));
 
   // Sort the samples
   std::vector<cudf::order> column_order;
@@ -89,8 +86,8 @@ using CudfColumns = std::vector<cudf::column_view>;
                                        cudf::detail::negative_index_policy::NOT_ALLOWED,
                                        stream);
 
-  CudfColumns keys;
-  for (auto &column : args.input) keys.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
+  std::vector<cudf::column_view> keys;
+  for (auto &column : args.input) keys.push_back(to_cudf_column(column, stream));
 
   auto splits =
     cudf::detail::lower_bound(cudf::table_view{keys}, dividers->view(), column_order, {}, stream);

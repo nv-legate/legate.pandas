@@ -46,14 +46,6 @@ void MergeTask::MergeArgs::sanity_check(void)
   for (auto idx : right_on) assert(idx >= 0 && idx < right_input.size());
 }
 
-void MergeTask::MergeArgs::cleanup(void)
-{
-  for (auto &column : left_input) column.destroy();
-  for (auto &column : right_input) column.destroy();
-  for (auto &column : left_output) column.destroy();
-  for (auto &column : right_output) column.destroy();
-}
-
 namespace detail {
 
 using HashSet   = std::unordered_set<table::Row, table::RowHasher, table::RowEqual>;
@@ -196,6 +188,9 @@ std::vector<int32_t> MergeTask::MergeArgs::right_indices() const
     right_common_indices.insert(pair.second);
   }
 
+  using ColumnRef       = std::reference_wrapper<Column<true>>;
+  using OutputColumnRef = std::reference_wrapper<OutputColumn>;
+
   std::vector<std::pair<OutputColumn, Column<true>>> left_columns;
   std::vector<std::pair<OutputColumn, Column<true>>> right_columns;
 
@@ -206,14 +201,14 @@ std::vector<int32_t> MergeTask::MergeArgs::right_indices() const
     auto &input = args.left_input[in_idx];
     if (left_common_indices.find(in_idx) == left_common_indices.end()) {
       auto &output = args.left_output[out_idx++];
-      left_columns.push_back(std::make_pair(output, input));
+      left_columns.push_back(std::make_pair(std::move(output), std::move(input)));
     } else {
       if (args.output_common_columns_to_left) {
         auto &output                            = args.left_output[out_idx++];
-        std::get<0>(common_columns[common_idx]) = output;
-        std::get<1>(common_columns[common_idx]) = input;
+        std::get<0>(common_columns[common_idx]) = std::move(output);
+        std::get<1>(common_columns[common_idx]) = std::move(input);
       } else
-        std::get<1>(common_columns[common_idx]) = input;
+        std::get<1>(common_columns[common_idx]) = std::move(input);
       ++common_idx;
     }
   }
@@ -223,14 +218,14 @@ std::vector<int32_t> MergeTask::MergeArgs::right_indices() const
     auto &input = args.right_input[in_idx];
     if (right_common_indices.find(in_idx) == right_common_indices.end()) {
       auto &output = args.right_output[out_idx++];
-      right_columns.push_back(std::make_pair(output, input));
+      right_columns.push_back(std::make_pair(std::move(output), std::move(input)));
     } else {
       if (!args.output_common_columns_to_left) {
         auto &output                            = args.right_output[out_idx++];
-        std::get<0>(common_columns[common_idx]) = output;
-        std::get<2>(common_columns[common_idx]) = input;
+        std::get<0>(common_columns[common_idx]) = std::move(output);
+        std::get<2>(common_columns[common_idx]) = std::move(input);
       } else
-        std::get<2>(common_columns[common_idx]) = input;
+        std::get<2>(common_columns[common_idx]) = std::move(input);
       ++common_idx;
     }
   }
@@ -247,28 +242,28 @@ std::vector<int32_t> MergeTask::MergeArgs::right_indices() const
   alloc::DeferredBufferAllocator allocator;
 
   for (auto &pair : left_columns) {
-    auto &&output   = pair.first;
-    auto &&input    = pair.second;
-    auto &&gathered = copy::gather(
+    auto &output  = pair.first;
+    auto &input   = pair.second;
+    auto gathered = copy::gather(
       input.view(), left_indexer, out_of_range, copy::OutOfRangePolicy::NULLIFY, allocator);
-    pair.first.return_from_view(allocator, gathered);
-    maybe_copy_dictionary(pair.first, pair.second);
+    output.return_from_view(allocator, gathered);
+    maybe_copy_dictionary(output, input);
   }
 
   for (auto &pair : right_columns) {
-    auto &&output   = pair.first;
-    auto &&input    = pair.second;
-    auto &&gathered = copy::gather(
+    auto &output  = pair.first;
+    auto &input   = pair.second;
+    auto gathered = copy::gather(
       input.view(), right_indexer, out_of_range, copy::OutOfRangePolicy::NULLIFY, allocator);
     output.return_from_view(allocator, gathered);
-    maybe_copy_dictionary(output, pair.second);
+    maybe_copy_dictionary(output, input);
   }
 
   if (args.join_type != JoinTypeCode::OUTER) {
     for (auto &tpl : common_columns) {
-      auto &&output   = std::get<0>(tpl);
-      auto &&input    = std::get<1>(tpl);
-      auto &&gathered = copy::gather(
+      auto &output  = std::get<0>(tpl);
+      auto &input   = std::get<1>(tpl);
+      auto gathered = copy::gather(
         input.view(), left_indexer, out_of_range, copy::OutOfRangePolicy::NULLIFY, allocator);
       output.return_from_view(allocator, gathered);
       maybe_copy_dictionary(output, input);

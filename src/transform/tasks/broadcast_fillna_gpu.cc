@@ -16,8 +16,8 @@
 
 #include "transform/tasks/broadcast_fillna.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
@@ -53,13 +53,13 @@ using namespace Legion;
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto input = DeviceColumn<true>{in}.to_cudf_column(stream);
+  auto input = to_cudf_column(in, stream);
   std::unique_ptr<cudf::scalar> p_fill_value =
     to_cudf_scalar(scalar.raw_ptr(), scalar.code(), stream);
 
   DeferredBufferAllocator mr;
   auto result = cudf::detail::replace_nulls(input, *p_fill_value, stream, &mr);
-  DeviceOutputColumn{out}.return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(out, std::move(result), stream, mr);
 }
 
 }  // namespace transform

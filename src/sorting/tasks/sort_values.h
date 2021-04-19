@@ -28,8 +28,6 @@ namespace sorting {
 class SortValuesTask : public PandasTask<SortValuesTask> {
  public:
   struct SortValuesArgs {
-    ~SortValuesArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using InputTable = std::vector<Column<true>>;

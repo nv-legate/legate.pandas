@@ -172,8 +172,7 @@ struct StringReductionImpl {
       }
     }
 
-    return Scalar(initialized,
-                  initialized ? new std::string(out) : static_cast<std::string *>(nullptr));
+    return initialized ? Scalar(initialized, out) : Scalar(TypeCode::STRING);
   }
 
   template <AggregationCode AGG, std::enable_if_t<AGG == AggregationCode::COUNT> * = nullptr>

@@ -36,14 +36,6 @@ void SliceByRangeTask::SliceByRangeTaskArgs::sanity_check(void)
     assert(!input(pair).valid() || output(pair).code() == input(pair).code());
 }
 
-void SliceByRangeTask::SliceByRangeTaskArgs::cleanup(void)
-{
-  for (auto &pair : pairs) {
-    output(pair).destroy();
-    input(pair).destroy();
-  }
-}
-
 /*static*/ int64_t SliceByRangeTask::cpu_variant(const Task *task,
                                                  const std::vector<PhysicalRegion> &regions,
                                                  Context context,

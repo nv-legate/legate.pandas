@@ -27,8 +27,6 @@ namespace copy {
 class ScatterByMaskTask : public PandasTask<ScatterByMaskTask> {
  public:
   struct ScatterByMaskTaskArgs {
-    ~ScatterByMaskTaskArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     struct ScatterByMaskArg {

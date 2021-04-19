@@ -26,8 +26,6 @@ namespace copy {
 class SliceByRangeTask : public PandasTask<SliceByRangeTask> {
  public:
   struct SliceByRangeTaskArgs {
-    ~SliceByRangeTaskArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using SliceByRangeArg = std::pair<OutputColumn, Column<true>>;

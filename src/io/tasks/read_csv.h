@@ -29,9 +29,6 @@ namespace csv {
 class ReadCSVTask : public PandasTask<ReadCSVTask> {
  public:
   struct ReadCSVArgs {
-    ~ReadCSVArgs(void) { cleanup(); }
-    void cleanup(void);
-
     using Columns = std::vector<OutputColumn>;
 
     std::vector<std::string> filenames;

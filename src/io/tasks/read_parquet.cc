@@ -120,11 +120,6 @@ std::shared_ptr<arrow::Table> ParquetReader::read(const std::string &filename)
 
 using namespace Legion;
 
-void ReadParquetTask::ReadParquetArgs::cleanup(void)
-{
-  for (auto &column : columns) column.destroy();
-}
-
 /*static*/ int64_t ReadParquetTask::cpu_variant(const Task *task,
                                                 const std::vector<PhysicalRegion> &regions,
                                                 Context context,

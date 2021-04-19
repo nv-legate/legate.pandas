@@ -16,8 +16,8 @@
 
 #include "copy/tasks/write_at.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
@@ -82,10 +82,10 @@ using namespace Legion;
                     m_cond.begin<bool>(),
                     detail::gpu::gen_cond_fn{idx - shape.lo[0]});
 
-  auto input_view = DeviceColumn<true>{input}.to_cudf_column(stream);
+  auto input_view = to_cudf_column(input, stream);
   auto value_sc   = to_cudf_scalar(value.valid() ? value.raw_ptr() : nullptr, input.code(), stream);
   auto result     = cudf::detail::copy_if_else(input_view, *value_sc, cond->view(), stream, &mr);
-  DeviceOutputColumn{output}.return_from_cudf_column(mr, result->view(), stream);
+  from_cudf_column(output, std::move(result), stream, mr);
 }
 
 }  // namespace copy

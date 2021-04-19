@@ -27,8 +27,6 @@ using InputTable  = std::vector<Column<true>>;
 using OutputTable = std::vector<OutputColumn>;
 
 struct LocalPartitionArgs {
-  ~LocalPartitionArgs(void) { cleanup(); }
-  void cleanup(void);
   void sanity_check(void);
 
   AccessorWO<Legion::Rect<1>, 2> hist_acc;

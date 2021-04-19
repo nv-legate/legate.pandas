@@ -23,76 +23,40 @@ namespace pandas {
 
 class Scalar {
  public:
-  Scalar()               = default;
-  Scalar(const Scalar &) = default;
-  Scalar(Scalar &&other) : valid_(other.valid_), code_(other.code_), value_(other.value_) {}
-  void destroy()
-  {
-    if (code_ == TypeCode::STRING) delete ptr<std::string>();
-  }
+  Scalar() = default;
+  Scalar(const Scalar &other) noexcept;
+  Scalar(Scalar &&other) noexcept;
+  ~Scalar();
 
  public:
-  constexpr Scalar &operator=(Scalar &&other)
-  {
-    valid_ = other.valid_;
-    code_  = other.code_;
-    value_ = other.value_;
-    return *this;
-  }
+  Scalar &operator=(const Scalar &other) noexcept;
+  Scalar &operator=(Scalar &&other) noexcept;
 
  public:
   template <typename T>
-  Scalar(bool valid, T value, TypeCode code = pandas_type_code_of<T>) : valid_(valid), code_(code)
+  Scalar(bool valid, T val, TypeCode code = pandas_type_code_of<T>) : valid_(valid), code_(code)
   {
-    *reinterpret_cast<T *>(&value_) = value;
+#ifdef DEBUG_PANDAS
+    assert(code_ != TypeCode::INVALID);
+#endif
+    value<T>() = val;
   }
 
-  Scalar(bool valid, std::string *value) : valid_(valid), code_(TypeCode::STRING)
+  Scalar(bool valid, const std::string &val) : valid_(valid), code_(TypeCode::STRING)
   {
-    *reinterpret_cast<std::string **>(&value_) = value;
+    value_ = reinterpret_cast<uint64_t>(new std::string(val));
   }
 
   Scalar(TypeCode code) : valid_(false), code_(code) {}
 
+ private:
+  void copy_value(const Scalar &other);
+  void destroy();
+
  public:
-  inline size_t legion_buffer_size(void) const
-  {
-    if (code_ == TypeCode::STRING)
-      return sizeof(Scalar) + value<std::string>().size();
-    else
-      return sizeof(Scalar);
-  }
-
-  inline void legion_serialize(void *buffer) const
-  {
-    if (code_ == TypeCode::STRING) {
-      const auto header_size = sizeof(Scalar) - sizeof(value_);
-      memcpy(buffer, this, header_size);
-
-      auto payload_offset                         = static_cast<int8_t *>(buffer) + header_size;
-      const auto val                              = value<std::string>();
-      *reinterpret_cast<size_t *>(payload_offset) = val.size();
-      memcpy(payload_offset + sizeof(size_t), val.c_str(), val.size());
-    } else
-      memcpy(buffer, this, sizeof(Scalar));
-  }
-
-  inline void legion_deserialize(const void *buffer)
-  {
-    valid_ = static_cast<const int32_t *>(buffer)[0];
-    code_  = static_cast<TypeCode>(static_cast<const int32_t *>(buffer)[1]);
-
-    if (!valid_) return;
-
-    if (code_ == TypeCode::STRING) {
-      auto len_offset  = static_cast<const int8_t *>(buffer) + sizeof(valid_) + sizeof(code_);
-      auto char_offset = len_offset + sizeof(size_t);
-      auto len         = *reinterpret_cast<const size_t *>(len_offset);
-      auto value       = new std::string(char_offset, char_offset + len);
-      *reinterpret_cast<std::string **>(&value_) = value;
-    } else
-      value_ = static_cast<const uint64_t *>(buffer)[1];
-  }
+  size_t legion_buffer_size() const;
+  void legion_serialize(void *buffer) const;
+  void legion_deserialize(const void *buffer);
 
  public:
   bool valid() const { return valid_; }
@@ -103,25 +67,13 @@ class Scalar {
   template <typename T>
   T &value()
   {
-#ifdef DEBUG_PANDAS
-    assert(pandas_type_code_of<T> == to_storage_type_code(code_));
-#endif
-    if (code_ != TypeCode::STRING)
-      return *reinterpret_cast<T *>(&value_);
-    else
-      return *reinterpret_cast<T *>(value_);
+    return *ptr<T>();
   }
 
   template <typename T>
   const T &value() const
   {
-#ifdef DEBUG_PANDAS
-    assert(pandas_type_code_of<T> == to_storage_type_code(code_));
-#endif
-    if (code_ != TypeCode::STRING)
-      return *reinterpret_cast<const T *>(&value_);
-    else
-      return *reinterpret_cast<T *>(value_);
+    return *ptr<T>();
   }
 
   template <typename T>

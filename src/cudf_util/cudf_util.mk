@@ -13,7 +13,8 @@
 # limitations under the License.
 #
 
-GEN_SRC += cudf_util/scalar.cc             \
+GEN_SRC += cudf_util/column.cc             \
+					 cudf_util/scalar.cc             \
 					 cudf_util/types.cc              \
 					 cudf_util/tasks/libcudf_init.cc
 

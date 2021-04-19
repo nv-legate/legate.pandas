@@ -42,8 +42,10 @@ using namespace Legion;
     output.make_empty(true);
   else {
     std::vector<Scalar> scalars;
-    for (auto idx = shape.lo[0]; idx <= shape.hi[0]; ++idx)
-      scalars.push_back(task->futures[idx].get_result<Scalar>());
+    for (auto idx = shape.lo[0]; idx <= shape.hi[0]; ++idx) {
+      auto scalar = task->futures[idx].get_result<Scalar>();
+      scalars.push_back(std::move(scalar));
+    }
     output.return_from_scalars(scalars);
   }
 }

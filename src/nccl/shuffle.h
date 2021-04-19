@@ -49,10 +49,17 @@ std::unique_ptr<cudf::table> all_gather(const cudf::table_view &input,
 std::pair<cudf::table_view, std::unordered_map<uint32_t, cudf::column_view>> extract_dictionaries(
   const cudf::table_view &input);
 
+std::pair<std::unique_ptr<cudf::table>, std::unordered_map<uint32_t, std::unique_ptr<cudf::column>>>
+extract_dictionaries(std::unique_ptr<cudf::table> &&input);
+
 // Recovers the original categorical columns using a map of dictionaries that was generated
 // by a extract_dictionaries call.
 cudf::table_view embed_dictionaries(
   const cudf::table_view &input,
+  const std::unordered_map<uint32_t, cudf::column_view> &dictionaries);
+
+std::unique_ptr<cudf::table> embed_dictionaries(
+  std::unique_ptr<cudf::table> &&input,
   const std::unordered_map<uint32_t, cudf::column_view> &dictionaries);
 
 }  // namespace comm

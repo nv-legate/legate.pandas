@@ -22,10 +22,24 @@ namespace pandas {
 ////////////////////////////////////////
 
 template <bool READ>
-inline void Column<READ>::destroy()
+Column<READ>::Column(Column<READ> &&other) noexcept
+  : column_(std::move(other.column_)),
+    bitmask_(std::move(other.bitmask_)),
+    children_(std::move(other.children_)),
+    num_elements_(other.num_elements_),
+    null_count_(other.null_count_)
 {
-  column_.destroy();
-  if (nullptr != bitmask_) { bitmask_->destroy(); }
+}
+
+template <bool READ>
+Column<READ> &Column<READ>::operator=(Column<READ> &&other) noexcept
+{
+  column_       = std::move(other.column_);
+  bitmask_      = std::move(other.bitmask_);
+  children_     = std::move(other.children_);
+  num_elements_ = other.num_elements_;
+  null_count_   = other.null_count_;
+  return *this;
 }
 
 template <bool READ>
@@ -127,7 +141,7 @@ template <bool READ>
 detail::Column Column<READ>::view() const
 {
   std::vector<detail::Column> children{};
-  for (auto child : children_) children.push_back(child.view());
+  for (auto &child : children_) children.push_back(child.view());
 
   return detail::Column(code(),
                         column_.is_meta() ? nullptr : raw_column_untyped_read(),
@@ -158,7 +172,7 @@ void deserialize(Deserializer &ctx, Column<READ> &column)
   bool nullable = false;
   deserialize(ctx, nullable);
   if (nullable) {
-    column.bitmask_ = std::make_shared<typename decltype(column.bitmask_)::element_type>();
+    column.bitmask_ = std::make_unique<typename decltype(column.bitmask_)::element_type>();
     deserialize(ctx, *column.bitmask_);
   } else
     column.bitmask_ = nullptr;

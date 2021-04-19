@@ -30,16 +30,6 @@ void ScanTask::ScanArgs::sanity_check(void)
   if (local) assert(input.num_elements() == output.num_elements());
 }
 
-void ScanTask::ScanArgs::cleanup(void)
-{
-  output.destroy();
-  if (local) {
-    input.destroy();
-    if (has_buffer) write_buffer.destroy();
-  } else
-    read_buffer.destroy();
-}
-
 namespace detail {
 
 template <typename T>

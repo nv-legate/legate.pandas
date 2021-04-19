@@ -17,8 +17,8 @@
 #include "reduction/tasks/equals.h"
 #include "category/conversion.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/detail.h"
 #include "cudf_util/scalar.h"
 #include "util/gpu_task_context.h"
@@ -87,8 +87,8 @@ Scalar equals_category(cudf::column_view &&in1, cudf::column_view &&in2, cudaStr
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  auto in1_view = DeviceColumn<true>{in1}.to_cudf_column(stream);
-  auto in2_view = DeviceColumn<true>{in2}.to_cudf_column(stream);
+  auto in1_view = to_cudf_column(in1, stream);
+  auto in2_view = to_cudf_column(in2, stream);
 
   if (in1.code() == TypeCode::CAT32)
     return detail::equals_category(std::move(in1_view), std::move(in2_view), stream);

@@ -26,6 +26,7 @@ include merge/merge_cpu.mk
 include partitioning/partitioning_cpu.mk
 include range/range_cpu.mk
 include reduction/reduction_cpu.mk
+include scalar/scalar.mk
 include sorting/sorting_cpu.mk
 include string/string_cpu.mk
 include table/table.mk

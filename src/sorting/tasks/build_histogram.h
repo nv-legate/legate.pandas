@@ -28,8 +28,6 @@ namespace sorting {
 class BuildHistogramTask : public PandasTask<BuildHistogramTask> {
  public:
   struct BuildHistogramArgs {
-    ~BuildHistogramArgs(void) { cleanup(); }
-    void cleanup(void);
     void sanity_check(void);
 
     using Table = std::vector<Column<true>>;

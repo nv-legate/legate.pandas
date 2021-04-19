@@ -16,8 +16,8 @@
 
 #include "copy/tasks/copy_if_else.h"
 #include "column/column.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "cudf_util/scalar.h"
 #include "util/gpu_task_context.h"
 
@@ -67,27 +67,27 @@ using namespace Legion;
   DeferredBufferAllocator mr;
 
   if (has_other && !other_is_scalar) {
-    auto input = DeviceColumn<true>{h_input}.to_cudf_column(stream);
-    auto cond  = DeviceColumn<true>{h_cond}.to_cudf_column(stream);
-    auto other = DeviceColumn<true>{h_other}.to_cudf_column(stream);
+    auto input = to_cudf_column(h_input, stream);
+    auto cond  = to_cudf_column(h_cond, stream);
+    auto other = to_cudf_column(h_other, stream);
     if (negate) {
       auto result = cudf::detail::copy_if_else(other, input, cond, stream, &mr);
-      DeviceOutputColumn{h_result}.return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(h_result, std::move(result), stream, mr);
     } else {
       auto result = cudf::detail::copy_if_else(input, other, cond, stream, &mr);
-      DeviceOutputColumn{h_result}.return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(h_result, std::move(result), stream, mr);
     }
   } else {
-    auto input = DeviceColumn<true>{h_input}.to_cudf_column(stream);
-    auto cond  = DeviceColumn<true>{h_cond}.to_cudf_column(stream);
+    auto input = to_cudf_column(h_input, stream);
+    auto cond  = to_cudf_column(h_cond, stream);
     auto scalar =
       to_cudf_scalar(has_other ? other_scalar.raw_ptr() : nullptr, h_input.code(), stream);
     if (negate) {
       auto result = cudf::detail::copy_if_else(*scalar, input, cond, stream, &mr);
-      DeviceOutputColumn{h_result}.return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(h_result, std::move(result), stream, mr);
     } else {
       auto result = cudf::detail::copy_if_else(input, *scalar, cond, stream, &mr);
-      DeviceOutputColumn{h_result}.return_from_cudf_column(mr, result->view(), stream);
+      from_cudf_column(h_result, std::move(result), stream, mr);
     }
   }
 }

@@ -24,13 +24,6 @@ namespace copy {
 
 using namespace Legion;
 
-void ConcatenateTask::ConcatenateArgs::cleanup()
-{
-  for (auto &column : output_table) column.destroy();
-  for (auto &input_table : input_tables)
-    for (auto &column : input_table) column.destroy();
-}
-
 void ConcatenateTask::ConcatenateArgs::sanity_check()
 {
   for (auto &input_table : input_tables) {

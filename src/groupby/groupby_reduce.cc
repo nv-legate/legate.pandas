@@ -15,9 +15,7 @@
  */
 
 #include <vector>
-#include <unordered_set>
 #include <unordered_map>
-#include <cmath>
 
 #include "column/detail/column.h"
 #include "copy/concatenate.h"
@@ -48,20 +46,6 @@ void GroupByReductionTask::GroupByArgs::sanity_check(void)
   for (unsigned i = 0; i < in_keys.size(); ++i)
     assert(in_keys[i][0].num_elements() == in_values[0][i].num_elements());
   assert(all_out_values.size() == all_aggs.size());
-}
-
-void GroupByReductionTask::GroupByArgs::cleanup(void)
-{
-  for (auto &columns : in_keys)
-    for (auto &column : columns) column.destroy();
-
-  for (auto &columns : in_values)
-    for (auto &column : columns) column.destroy();
-
-  for (auto &out_key : out_keys) out_key.destroy();
-
-  for (auto &out_values : all_out_values)
-    for (auto &out_value : out_values) out_value.destroy();
 }
 
 namespace detail {
@@ -552,7 +536,7 @@ void deserialize(Deserializer &des, GroupByReductionTask::GroupByArgs &args)
     deserialize(des, columns, false);
     bool all_valid = true;
     for (auto &column : columns) all_valid = all_valid && column.valid();
-    if (all_valid) args.in_keys.push_back(columns);
+    if (all_valid) args.in_keys.push_back(std::move(columns));
   }
 
   args.out_keys.resize(num_keys);
@@ -579,9 +563,9 @@ void deserialize(Deserializer &des, GroupByReductionTask::GroupByArgs &args)
     for (uint32_t in_idx = 0; in_idx < num_inputs; ++in_idx) {
       Column<true> column;
       deserialize(des, column);
-      if (column.valid()) in_columns.push_back(column);
+      if (column.valid()) in_columns.push_back(std::move(column));
     }
-    args.in_values.push_back(in_columns);
+    args.in_values.push_back(std::move(in_columns));
   }
 
 #ifdef DEBUG_PANDAS

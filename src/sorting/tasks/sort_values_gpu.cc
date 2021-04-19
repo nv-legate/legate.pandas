@@ -17,9 +17,8 @@
 #include <numeric>
 
 #include "sorting/tasks/sort_values.h"
-#include "column/device_column.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
-#include "util/zip_for_each.h"
 
 #include <cudf/detail/sorting.hpp>
 #include <cudf/table/table.hpp>
@@ -54,8 +53,7 @@ using CudfColumns = std::vector<cudf::column_view>;
   auto stream = gpu_ctx.stream();
 
   CudfColumns keys, values;
-  for (auto &column : args.input)
-    values.push_back(DeviceColumn<true>{column}.to_cudf_column(stream));
+  for (auto &column : args.input) values.push_back(to_cudf_column(column, stream));
   for (auto idx : args.key_indices) keys.push_back(values[idx]);
 
   std::vector<cudf::order> column_order;
@@ -74,9 +72,7 @@ using CudfColumns = std::vector<cudf::column_view>;
                                           stream,
                                           &mr);
 
-  util::for_each(result->view(), args.output, [&](auto &cudf_output, auto &output) {
-    DeviceOutputColumn{output}.return_from_cudf_column(mr, cudf_output, stream);
-  });
+  from_cudf_table(args.output, std::move(result), stream, mr);
 
   return size;
 }

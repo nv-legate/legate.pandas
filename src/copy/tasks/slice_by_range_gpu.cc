@@ -15,8 +15,8 @@
  */
 
 #include "copy/tasks/slice_by_range.h"
-#include "column/device_column.h"
 #include "cudf_util/allocators.h"
+#include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 
 #include <cudf/copying.hpp>
@@ -64,9 +64,9 @@ static inline Column<true> &input(SliceByRangeArg &arg) { return arg.second; };
   for (auto &pair : args.pairs) {
     auto &in    = input(pair);
     auto &out   = output(pair);
-    auto slices = cudf::slice(DeviceColumn<true>{in}.to_cudf_column(stream), indices);
-    cudf::column slice(slices[0], stream, &mr);
-    DeviceOutputColumn{out}.return_from_cudf_column(mr, slice.view(), stream);
+    auto slices = cudf::slice(to_cudf_column(in, stream), indices);
+    auto slice  = std::make_unique<cudf::column>(slices[0], stream, &mr);
+    from_cudf_column(out, std::move(slice), stream, mr);
   }
 
   return out_size;

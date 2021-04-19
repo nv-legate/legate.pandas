@@ -29,12 +29,6 @@ void LocalPartitionArgs::sanity_check(void)
   for (auto &column : input) assert(input[0].shape() == column.shape());
 }
 
-void LocalPartitionArgs::cleanup(void)
-{
-  for (auto &column : input) column.destroy();
-  for (auto &column : output) column.destroy();
-}
-
 void deserialize(Deserializer &ctx, LocalPartitionArgs &args)
 {
   args.hist_rect = deserialize(ctx, args.hist_acc);

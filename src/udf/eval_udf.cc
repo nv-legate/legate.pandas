@@ -27,12 +27,6 @@ void EvalUDFTask::EvalUDFTaskArgs::sanity_check(void)
   for (auto &column : columns) assert(column.shape() == columns[0].shape());
 }
 
-void EvalUDFTask::EvalUDFTaskArgs::cleanup(void)
-{
-  mask.destroy();
-  for (auto &column : columns) column.destroy();
-}
-
 /*static*/ void EvalUDFTask::cpu_variant(const Task *task,
                                          const std::vector<PhysicalRegion> &regions,
                                          Context context,
