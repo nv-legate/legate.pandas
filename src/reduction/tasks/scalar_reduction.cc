@@ -152,7 +152,7 @@ struct StringReductionImpl {
       }
     }
 
-    return Scalar(valid, valid ? new std::string(result) : static_cast<std::string *>(nullptr));
+    return valid ? Scalar(valid, result) : Scalar(TypeCode::STRING);
   }
 
   template <

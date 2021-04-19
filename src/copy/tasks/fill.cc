@@ -55,7 +55,6 @@ using namespace Legion;
   alloc::DeferredBufferAllocator allocator;
   auto filled = fill(value, static_cast<size_t>(my_size), allocator);
   out.return_from_view(allocator, filled);
-  value.destroy();
 }
 
 static void __attribute__((constructor)) register_tasks(void) { FillTask::register_variants(); }
