@@ -36,7 +36,7 @@ void deserialize(Deserializer &ctx, OutputColumn &column)
   for (auto &child : column.children_) deserialize(ctx, child);
 }
 
-OutputColumn::OutputColumn(OutputColumn &&other)
+OutputColumn::OutputColumn(OutputColumn &&other) noexcept
   : column_(std::move(other.column_)),
     bitmask_(std::move(other.bitmask_)),
     children_(std::move(other.children_)),
@@ -44,7 +44,7 @@ OutputColumn::OutputColumn(OutputColumn &&other)
 {
 }
 
-OutputColumn &OutputColumn::operator=(OutputColumn &&other)
+OutputColumn &OutputColumn::operator=(OutputColumn &&other) noexcept
 {
   column_       = std::move(other.column_);
   bitmask_      = std::move(other.bitmask_);

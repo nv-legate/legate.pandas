@@ -22,7 +22,7 @@ namespace pandas {
 ////////////////////////////////////////
 
 template <bool READ>
-Column<READ>::Column(Column<READ> &&other)
+Column<READ>::Column(Column<READ> &&other) noexcept
   : column_(std::move(other.column_)),
     bitmask_(std::move(other.bitmask_)),
     children_(std::move(other.children_)),
@@ -32,7 +32,7 @@ Column<READ>::Column(Column<READ> &&other)
 }
 
 template <bool READ>
-Column<READ> &Column<READ>::operator=(Column<READ> &&other)
+Column<READ> &Column<READ>::operator=(Column<READ> &&other) noexcept
 {
   column_       = std::move(other.column_);
   bitmask_      = std::move(other.bitmask_);

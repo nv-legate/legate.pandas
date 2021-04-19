@@ -45,7 +45,7 @@ RegionArg<READ, DIM>::~RegionArg()
 }
 
 template <bool READ, int DIM>
-RegionArg<READ, DIM>::RegionArg(RegionArg<READ, DIM> &&other)
+RegionArg<READ, DIM>::RegionArg(RegionArg<READ, DIM> &&other) noexcept
   : code(other.code),
     pr_(other.pr_),
     fid_(other.fid_),
@@ -57,7 +57,7 @@ RegionArg<READ, DIM>::RegionArg(RegionArg<READ, DIM> &&other)
 }
 
 template <bool READ, int DIM>
-RegionArg<READ, DIM> &RegionArg<READ, DIM>::operator=(RegionArg<READ, DIM> &&other)
+RegionArg<READ, DIM> &RegionArg<READ, DIM>::operator=(RegionArg<READ, DIM> &&other) noexcept
 {
   code            = other.code;
   pr_             = other.pr_;

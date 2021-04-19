@@ -31,11 +31,12 @@ class RegionArg {
   ~RegionArg();
 
  public:
-  RegionArg(const RegionArg &other) = delete;
-  RegionArg(RegionArg &&other);
+  RegionArg(RegionArg &&other) noexcept;
+  RegionArg &operator=(RegionArg &&other) noexcept;
 
+ private:
+  RegionArg(const RegionArg &other) = delete;
   RegionArg &operator=(const RegionArg &other) = delete;
-  RegionArg &operator                          =(RegionArg &&other);
 
  public:
   const Legion::Rect<DIM> &shape() const

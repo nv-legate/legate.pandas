@@ -47,11 +47,12 @@ class Column {
   Column()  = default;
   ~Column() = default;
 
-  Column(const Column<READ> &other) = delete;
-  Column(Column<READ> &&other);
+  Column(Column<READ> &&other) noexcept;
+  Column &operator=(Column<READ> &&other) noexcept;
 
+ private:
+  Column(const Column<READ> &other) = delete;
   Column &operator=(const Column<READ> &other) = delete;
-  Column &operator                             =(Column<READ> &&other);
 
  public:
   inline auto &child(uint32_t idx) const { return children_[idx]; }
@@ -120,14 +121,14 @@ class OutputColumn {
   friend void deserialize(Deserializer &ctx, OutputColumn &column);
 
  public:
-  OutputColumn()                          = default;
-  ~OutputColumn()                         = default;
-  OutputColumn(const OutputColumn &other) = delete;
-  OutputColumn(OutputColumn &&other);
+  OutputColumn()  = default;
+  ~OutputColumn() = default;
+  OutputColumn(OutputColumn &&other) noexcept;
+  OutputColumn &operator=(OutputColumn &&other) noexcept;
 
- public:
+ private:
+  OutputColumn(const OutputColumn &other) = delete;
   OutputColumn &operator=(const OutputColumn &other) = delete;
-  OutputColumn &operator                             =(OutputColumn &&other);
 
  public:
   inline OutputColumn &child(uint32_t idx) { return children_[idx]; }
