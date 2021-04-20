@@ -60,6 +60,7 @@ typedef enum legate_pandas_op_code_t {
   CREATE_DIR,
   DROPNA,
   DROP_DUPLICATES,
+  DROP_DUPLICATES_NCCL,
   ENCODE,
   ENCODE_CATEGORY,
   ENCODE_NCCL,

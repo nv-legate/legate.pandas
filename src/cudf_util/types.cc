@@ -18,6 +18,7 @@
 
 #include <cudf/aggregation.hpp>
 #include <cudf/binaryop.hpp>
+#include <cudf/stream_compaction.hpp>
 #include <cudf/io/types.hpp>
 
 namespace legate {
@@ -153,6 +154,16 @@ cudf::io::compression_type to_cudf_compression(CompressionType compression)
     case CompressionType::XZ: return cudf::io::compression_type::XZ;
   }
   return cudf::io::compression_type::AUTO;
+}
+
+cudf::duplicate_keep_option to_cudf_keep_option(KeepMethod method)
+{
+  switch (method) {
+    case KeepMethod::FIRST: return cudf::duplicate_keep_option::KEEP_FIRST;
+    case KeepMethod::LAST: return cudf::duplicate_keep_option::KEEP_LAST;
+    case KeepMethod::NONE: return cudf::duplicate_keep_option::KEEP_NONE;
+  }
+  return cudf::duplicate_keep_option::KEEP_FIRST;
 }
 
 }  // namespace pandas

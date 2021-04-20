@@ -14,36 +14,25 @@
  *
  */
 
-#include <memory>
+#pragma once
 
 #include "pandas.h"
 
-namespace cudf {
-
-class aggregation;
-enum class binary_operator;
-enum class type_id;
-enum class duplicate_keep_option;
-
-namespace io {
-
-enum class compression_type;
-
-}  // namespace io
-}  // namespace cudf
-
 namespace legate {
 namespace pandas {
+namespace copy {
 
-cudf::type_id to_cudf_type_id(TypeCode code);
+class DropDuplicatesNCCLTask : public PandasTask<DropDuplicatesNCCLTask> {
+ public:
+  static const int TASK_ID = OpCode::DROP_DUPLICATES_NCCL;
 
-std::unique_ptr<cudf::aggregation> to_cudf_agg(AggregationCode code);
+ public:
+  static int64_t gpu_variant(const Legion::Task *task,
+                             const std::vector<Legion::PhysicalRegion> &regions,
+                             Legion::Context context,
+                             Legion::Runtime *runtime);
+};
 
-cudf::binary_operator to_cudf_binary_op(AggregationCode code);
-
-cudf::io::compression_type to_cudf_compression(CompressionType compression);
-
-cudf::duplicate_keep_option to_cudf_keep_option(KeepMethod method);
-
+}  // namespace copy
 }  // namespace pandas
 }  // namespace legate
