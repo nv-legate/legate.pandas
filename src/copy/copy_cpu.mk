@@ -22,6 +22,7 @@ GEN_SRC += copy/concatenate.cc            \
 					 copy/tasks/concatenate.cc      \
 					 copy/tasks/copy_if_else.cc     \
 					 copy/tasks/dropna.cc           \
+					 copy/tasks/drop_duplicates.cc  \
 					 copy/tasks/fill.cc             \
 					 copy/tasks/materialize.cc      \
 					 copy/tasks/read_at.cc          \

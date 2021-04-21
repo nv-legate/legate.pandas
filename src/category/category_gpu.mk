@@ -20,6 +20,5 @@ GEN_SRC += category/conversion.cc                \
 GEN_GPU_SRC += category/encode.cu
 
 ifeq ($(strip $(USE_NCCL)),1)
-GEN_GPU_SRC += category/drop_duplicates.cu   \
-							 category/tasks/encode_nccl.cu
+GEN_GPU_SRC += category/tasks/encode_nccl.cu
 endif

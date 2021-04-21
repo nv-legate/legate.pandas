@@ -82,7 +82,15 @@ class Column {
 
 class Table {
  public:
-  Table(std::vector<Column> &&columns) : columns_(columns) {}
+  Table() = default;
+  Table(std::vector<Column> &&columns) : columns_(std::forward<std::vector<Column>>(columns)) {}
+
+ public:
+  Table(Table &&other)      = default;
+  Table(const Table &table) = default;
+
+  Table &operator=(Table &&other) = default;
+  Table &operator=(const Table &table) = default;
 
  public:
   inline size_t size() const { return columns_.front().size(); }
@@ -91,6 +99,17 @@ class Table {
  public:
   inline const std::vector<Column> &columns() const { return columns_; }
   inline decltype(auto) column(size_t idx) const { return columns_[idx]; }
+
+ public:
+  std::vector<Column> select(std::vector<int32_t> indices) const
+  {
+    std::vector<Column> selected;
+    for (auto &idx : indices) selected.push_back(columns_[idx]);
+    return std::move(selected);
+  }
+
+ public:
+  std::vector<Column> release() { return std::move(columns_); }
 
  protected:
   std::vector<Column> columns_;

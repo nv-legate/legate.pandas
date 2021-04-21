@@ -20,25 +20,25 @@
 
 namespace legate {
 namespace pandas {
-namespace category {
+namespace copy {
 
 class DropDuplicatesTask : public PandasTask<DropDuplicatesTask> {
  public:
-  static const int TASK_ID = OpCode::DROP_DUPLICATES_CATEGORIES;
+  static const int TASK_ID = OpCode::DROP_DUPLICATES_TREE;
 
  public:
-  static void cpu_variant(const Legion::Task *task,
-                          const std::vector<Legion::PhysicalRegion> &regions,
-                          Legion::Context context,
-                          Legion::Runtime *runtime);
+  static int64_t cpu_variant(const Legion::Task *task,
+                             const std::vector<Legion::PhysicalRegion> &regions,
+                             Legion::Context context,
+                             Legion::Runtime *runtime);
 #ifdef LEGATE_USE_CUDA
-  static void gpu_variant(const Legion::Task *task,
-                          const std::vector<Legion::PhysicalRegion> &regions,
-                          Legion::Context context,
-                          Legion::Runtime *runtime);
+  static int64_t gpu_variant(const Legion::Task *task,
+                             const std::vector<Legion::PhysicalRegion> &regions,
+                             Legion::Context context,
+                             Legion::Runtime *runtime);
 #endif
 };
 
-}  // namespace category
+}  // namespace copy
 }  // namespace pandas
 }  // namespace legate

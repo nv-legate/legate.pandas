@@ -24,6 +24,7 @@ from legate.pandas.common import errors as err, types as ty, util as util
 from legate.pandas.config import OpCode
 
 from .column import Column, _create_column
+from .drop_duplicates import drop_duplicates
 from .future import Scalar
 from .groupby import GroupbyReducer
 from .index import BaseIndex, create_index_from_columns, create_range_index
@@ -867,53 +868,27 @@ class Table(object):
 
         return self.replace_columns(results)
 
-    def drop_duplicates_nccl(self, subset, keep, ignore_index):
-        result_storage = self._runtime.create_output_storage()
-
+    def drop_duplicates(self, subset, keep, ignore_index):
         inputs = self._columns.copy()
         if not ignore_index:
             inputs += self._index.columns
 
-        outputs = [
-            result_storage.create_similar_column(column) for column in inputs
-        ]
-
-        plan = Map(self._runtime, OpCode.DROP_DUPLICATES_NCCL)
-        plan.add_scalar_arg(keep.value, ty.int32)
-        plan.add_scalar_arg(len(subset), ty.uint32)
-        for idx in subset:
-            plan.add_scalar_arg(idx, ty.int32)
-        plan.add_scalar_arg(len(inputs), ty.uint32)
-        for input in inputs:
-            input.add_to_plan(plan, True)
-        for output in outputs:
-            output.add_to_plan_output_only(plan)
-        plan.add_future_map(self._runtime._nccl_comm)
-        counts = plan.execute(inputs[0].launch_domain)
-
-        result_storage = plan.promote_output_storage(result_storage)
-        self._runtime.register_external_weighted_partition(
-            result_storage.default_ipart, counts
+        (outputs, storage, volume) = drop_duplicates(
+            self._runtime,
+            inputs,
+            subset,
+            keep,
         )
 
-        total_count = counts.cast(ty.int64).sum()
         if ignore_index:
-            result_index = create_range_index(result_storage, total_count)
+            result_index = create_range_index(storage, volume)
         else:
             result_index = create_index_from_columns(
-                outputs[len(self._columns) :], total_count, self._index.names
+                outputs[len(self._columns) :], volume, self._index.names
             )
             outputs = outputs[: len(self._columns)]
 
         return self.replace_columns(outputs, index=result_index)
-
-    def drop_duplicates(self, subset, keep, ignore_index):
-        keep = self._runtime.get_keep_method(keep)
-
-        if self._runtime.use_nccl:
-            return self.drop_duplicates_nccl(subset, keep, ignore_index)
-        else:
-            assert False
 
     def dropna(self, axis, idxr, thresh):
         assert axis == 0
