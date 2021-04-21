@@ -57,6 +57,8 @@ Legate Pandas is still a work-in-progress that is missing some features that
 Dask+cuDF supports, but we believe that the performance and composability of
 Legate Pandas is demonstrative of the value of our approach.
 
+If you have questions, please contact us at legate(at)nvidia.com.
+
 ---
 
 1. [Dependencies](#dependencies)
