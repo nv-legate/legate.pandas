@@ -21,6 +21,7 @@
 #include "deserializer.h"
 
 #include <thrust/scan.h>
+#include <thrust/transform.h>
 
 #include <rmm/exec_policy.hpp>
 
@@ -29,21 +30,6 @@ namespace pandas {
 namespace range {
 
 using namespace Legion;
-
-namespace detail {
-
-__global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  to_sizes(const size_t max, int32_t *out, const Rect<1> *in)
-{
-  const size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= max) return;
-
-  auto &r = in[i];
-  out[i]  = static_cast<int32_t>(r.volume());
-  if (i == max - 1) out[i + 1] = 0;
-}
-
-}  // namespace detail
 
 /*static*/ int64_t RangesToOffsetsTask::gpu_variant(const Task *task,
                                                     const std::vector<PhysicalRegion> &regions,
@@ -72,8 +58,13 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   auto *out_offsets = out.raw_column<int32_t>();
   auto *in_ranges   = in.raw_column_read<Rect<1>>();
 
-  const size_t blocks = (size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-  detail::to_sizes<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(size, out_offsets, in_ranges);
+  auto start = thrust::make_counting_iterator<int64_t>(0);
+  auto stop  = thrust::make_counting_iterator<int64_t>(size + 1);
+
+  thrust::transform(
+    rmm::exec_policy(stream), start, stop, out_offsets, [in_ranges, size] __device__(auto idx) {
+      return idx == size ? 0 : in_ranges[idx].volume();
+    });
 
   thrust::exclusive_scan(
     rmm::exec_policy(stream), out_offsets, out_offsets + size + 1, out_offsets);

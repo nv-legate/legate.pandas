@@ -20,6 +20,8 @@
 
 #include <cuda.h>
 
+#define THREADS_PER_BLOCK 128
+
 namespace legate {
 namespace pandas {
 namespace udf {

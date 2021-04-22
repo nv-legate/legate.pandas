@@ -20,25 +20,15 @@
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
 
+#include <thrust/transform.h>
+
+#include <rmm/exec_policy.hpp>
+
 namespace legate {
 namespace pandas {
 namespace range {
 
 using namespace Legion;
-
-namespace detail {
-
-__global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  to_ranges(const size_t max, Rect<1> *out, const int32_t *in, coord_t offset)
-{
-  const size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i >= max) return;
-  auto lo = static_cast<coord_t>(in[i]) + offset;
-  auto hi = static_cast<coord_t>(in[i + 1]) - 1 + offset;
-  out[i]  = Rect<1>{lo, hi};
-}
-
-}  // namespace detail
 
 /*static*/ void OffsetsToRangesTask::gpu_variant(const Task *task,
                                                  const std::vector<PhysicalRegion> &regions,
@@ -55,7 +45,7 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   deserialize(ctx, in);
   deserialize(ctx, chars);
 
-  const auto num_offsets = in.num_elements();
+  const int64_t num_offsets = static_cast<int64_t>(in.num_elements());
 
   if (num_offsets == 0) return;
 
@@ -71,9 +61,16 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   auto *in_offsets = in.raw_column_read<int32_t>();
   auto offset      = chars.shape().lo[0];
 
-  const auto blocks = (num_ranges + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-  detail::to_ranges<<<blocks, THREADS_PER_BLOCK, 0, gpu_ctx.stream()>>>(
-    num_ranges, out_ranges, in_offsets, offset);
+  auto start = thrust::make_counting_iterator<int64_t>(0);
+  auto stop  = thrust::make_counting_iterator<int64_t>(num_ranges);
+
+  thrust::transform(rmm::exec_policy(gpu_ctx.stream()),
+                    start,
+                    stop,
+                    out_ranges,
+                    [in_offsets, offset] __device__(auto idx) {
+                      return Rect<1>(in_offsets[idx] + offset, in_offsets[idx + 1] + offset - 1);
+                    });
 }
 
 }  // namespace range

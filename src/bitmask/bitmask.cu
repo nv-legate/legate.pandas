@@ -21,6 +21,10 @@
 #include <cudf/reduction.hpp>
 #include <cudf/column/column_view.hpp>
 
+#include <thrust/transform.h>
+
+#include <rmm/exec_policy.hpp>
+
 namespace legate {
 namespace pandas {
 
@@ -48,30 +52,14 @@ void Bitmask::copy(const Bitmask &target, cudaStream_t stream) const
   cudaMemcpyAsync(target.bitmask, bitmask, num_elements, cudaMemcpyDeviceToDevice, stream);
 }
 
-static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  intersect_inplace(Bitmask out, Bitmask in)
-{
-  const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= out.num_elements) return;
-  out.set(idx, out.get(idx) && in.get(idx));
-}
-
-static __global__ void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  intersect(Bitmask out, Bitmask in1, Bitmask in2)
-{
-  const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= out.num_elements) return;
-  out.set(idx, in1.get(idx) && in2.get(idx));
-}
-
 void intersect_bitmasks(Bitmask &out, const Bitmask &in1, const Bitmask &in2, cudaStream_t stream)
 {
-  const size_t blocks = (out.num_elements + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+  auto start = thrust::make_counting_iterator<int64_t>(0);
+  auto stop  = thrust::make_counting_iterator<int64_t>(static_cast<int64_t>(out.num_elements));
 
-  if (in1.bitmask == out.bitmask)
-    intersect_inplace<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(out, in2);
-  else
-    intersect<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(out, in1, in2);
+  thrust::for_each(rmm::exec_policy(stream), start, stop, [out, in1, in2] __device__(auto idx) {
+    out.set(idx, in1.get(idx) && in2.get(idx));
+  });
 }
 
 }  // namespace pandas
