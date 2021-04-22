@@ -15,7 +15,7 @@
 
 from legate.pandas.common import types as ty
 from legate.pandas.config import OpCode
-from legate.pandas.core.pattern import Map, Projection
+from legate.pandas.core.pattern import Map, Projection, ScalarMap
 
 
 class Bitmask(object):
@@ -96,15 +96,16 @@ class Bitmask(object):
     # XXX: This method should be used with caution as it gets blocked
     #      on a future internally
     def has_nulls(self):
-        return self.count_nulls().sum().get_value() > 0
+        return self.count_nulls() > 0
 
     def count_nulls(self):
         from .column import Column
 
-        plan = Map(self._runtime, OpCode.COUNT_NULLS)
+        plan = ScalarMap(self._runtime, OpCode.COUNT_NULLS, ty.uint64)
         boolmask = Column(self._runtime, self._storage)
         boolmask.add_to_plan(plan, True)
-        return plan.execute(self.launch_domain).cast(ty.uint64)
+        counts = plan.execute(self.launch_domain)
+        return counts.sum().get_value()
 
     def to_raw_address(self):
         return self._storage.to_raw_address()

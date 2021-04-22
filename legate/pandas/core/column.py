@@ -1277,7 +1277,7 @@ class StringColumn(Column):
         bitmask_buf = None
         null_count = 0
         if new_self.nullable:
-            null_count = new_self.bitmask.count_nulls().sum().get_value()
+            null_count = new_self.bitmask.count_nulls()
             if null_count > 0:
                 bitmask = new_self.bitmask.compact_bitmask.to_raw_address()
                 bitmask_size = (num_elements + 7) // 8
