@@ -46,7 +46,9 @@ using CudfColumns = std::vector<cudf::column_view>;
   deserialize(ctx, args);
 
   int64_t size = static_cast<int64_t>(args.input[0].num_elements());
-  if (size == 0) {
+  if (0 == size) {
+    for (auto &column : args.output) column.make_empty(true);
+
     const coord_t lo = args.input[0].shape().lo[0];
     const coord_t y  = args.hist_rect.lo[1];
     for (coord_t i = 0; i < args.num_pieces; ++i)

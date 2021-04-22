@@ -24,6 +24,7 @@ from legate.pandas.common import errors as err, types as ty, util as util
 from legate.pandas.config import OpCode
 
 from .column import Column, _create_column
+from .densify import to_dense_columns
 from .future import Scalar
 from .groupby import GroupbyReducer
 from .index import BaseIndex, create_index_from_columns, create_range_index
@@ -985,6 +986,8 @@ class Table(object):
         if self._index.materialized:
             inputs.extend(util.to_list_if_scalar(self._index.column))
         outputs = partitioner._hash_partition(inputs, key_indices)
+        if not self._runtime.use_nccl:
+            outputs = to_dense_columns(self._runtime, outputs)
         if self._index.materialized:
             result_index = create_index_from_columns(
                 outputs[num_columns:],

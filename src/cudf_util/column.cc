@@ -34,8 +34,8 @@ void from_cudf_column(OutputColumn &column,
 #endif
   auto num_elements = cudf_column->size();
 
-  if (num_elements == 0) {
-    column.make_empty();
+  if (0 == num_elements) {
+    column.make_empty(true);
     return;
   }
 
@@ -64,8 +64,13 @@ void from_cudf_column(OutputColumn &column,
     }
   }
 
-  for (auto idx = 0; idx < column.num_children() && idx < contents.children.size(); ++idx)
-    from_cudf_column(column.child(idx), std::move(contents.children[idx]), stream, allocator);
+  for (auto idx = 0; idx < column.num_children(); ++idx) {
+    auto &child = column.child(idx);
+    if (idx < contents.children.size())
+      from_cudf_column(child, std::move(contents.children[idx]), stream, allocator);
+    else if (!child.valid())
+      child.make_empty(true);
+  }
 }
 
 cudf::table_view to_cudf_table(const std::vector<Column<true>> &columns, cudaStream_t stream)

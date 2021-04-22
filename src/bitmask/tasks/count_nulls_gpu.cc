@@ -30,16 +30,18 @@ using namespace Legion;
                                                 Context context,
                                                 Runtime *runtime)
 {
-  Deserializer derez{task, regions};
+  Deserializer ctx{task, regions};
 
-  AccessorRO<Bitmask::AllocType, 1> bitmask_acc;
-  const auto bitmask_rect = deserialize(derez, bitmask_acc);
+  Column<true> column;
+  deserialize(ctx, column);
 
-  if (bitmask_rect.empty()) return 0;
+  if (column.num_elements() == 0) return 0;
 
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
-  return Bitmask{bitmask_acc.ptr(bitmask_rect.lo), bitmask_rect.volume()}.count_unset_bits(stream);
+
+  const Bitmask bitmask(column.raw_column_read<Bitmask::AllocType>(), column.num_elements());
+  return bitmask.count_unset_bits(stream);
 }
 
 }  // namespace bitmask

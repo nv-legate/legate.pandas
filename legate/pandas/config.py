@@ -51,6 +51,7 @@ class OpCode(IntEnum):
     COPY_IF_ELSE = c_header.COPY_IF_ELSE
     COUNT_NULLS = c_header.COUNT_NULLS
     CREATE_DIR = c_header.CREATE_DIR
+    DENSIFY = c_header.DENSIFY
     DROPNA = c_header.DROPNA
     DROP_DUPLICATES = c_header.DROP_DUPLICATES
     ENCODE = c_header.ENCODE

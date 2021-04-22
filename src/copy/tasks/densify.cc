@@ -14,35 +14,39 @@
  *
  */
 
-#include "bitmask/tasks/count_nulls.h"
+#include "copy/tasks/densify.h"
 #include "column/column.h"
-#include "deserializer.h"
+#include "util/zip_for_each.h"
 
 namespace legate {
 namespace pandas {
-namespace bitmask {
+namespace copy {
 
 using namespace Legion;
 
-/*static*/ uint64_t CountNullsTask::cpu_variant(const Task *task,
-                                                const std::vector<PhysicalRegion> &regions,
-                                                Context context,
-                                                Runtime *runtime)
+/*static*/ int64_t DensifyTask::cpu_variant(const Task *task,
+                                            const std::vector<PhysicalRegion> &regions,
+                                            Context context,
+                                            Runtime *runtime)
 {
   Deserializer ctx{task, regions};
 
-  Column<true> column;
-  deserialize(ctx, column);
+  std::vector<Column<true>> inputs;
+  std::vector<OutputColumn> outputs;
 
-  const Bitmask bitmask(column.raw_column_read<Bitmask::AllocType>(), column.num_elements());
-  return bitmask.count_unset_bits();
+  deserialize(ctx, inputs);
+  deserialize(ctx, outputs);
+
+  util::for_each(outputs, inputs, [&](auto &output, auto &input) { output.copy(input, true); });
+
+  return static_cast<int64_t>(inputs[0].num_elements());
 }
 
 static void __attribute__((constructor)) register_tasks(void)
 {
-  CountNullsTask::register_variants_with_return<uint64_t, uint64_t>();
+  DensifyTask::register_variants_with_return<int64_t, int64_t>();
 }
 
-}  // namespace bitmask
+}  // namespace copy
 }  // namespace pandas
 }  // namespace legate

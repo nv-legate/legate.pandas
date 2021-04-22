@@ -58,6 +58,7 @@ typedef enum legate_pandas_op_code_t {
   COPY_IF_ELSE,
   COUNT_NULLS,
   CREATE_DIR,
+  DENSIFY,
   DROPNA,
   DROP_DUPLICATES,
   ENCODE,

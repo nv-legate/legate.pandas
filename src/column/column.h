@@ -172,6 +172,9 @@ class OutputColumn {
   void copy(const Column<true> &input, bool recurse = true);
 
  public:
+  void check_all_valid() const;
+
+ public:
   inline TypeCode code() const { return column_.code; }
   inline bool nullable() const { return nullptr != bitmask_; }
 

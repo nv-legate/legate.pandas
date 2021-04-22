@@ -99,10 +99,12 @@ class Bitmask(object):
         return self.count_nulls().sum().get_value() > 0
 
     def count_nulls(self):
-        plan_count = Map(self._runtime, OpCode.COUNT_NULLS)
-        proj = Projection(self._storage.primary_ipart)
-        plan_count.add_input(self._storage, proj)
-        return plan_count.execute(self.launch_domain).cast(ty.uint64)
+        from .column import Column
+
+        plan = Map(self._runtime, OpCode.COUNT_NULLS)
+        boolmask = Column(self._runtime, self._storage)
+        boolmask.add_to_plan(plan, True)
+        return plan.execute(self.launch_domain).cast(ty.uint64)
 
     def to_raw_address(self):
         return self._storage.to_raw_address()

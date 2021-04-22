@@ -30,11 +30,8 @@ class SampleKeysTask : public PandasTask<SampleKeysTask> {
   struct SampleKeysArgs {
     void sanity_check(void);
 
-    using InputTable  = std::vector<Column<true>>;
-    using OutputTable = std::vector<OutputColumn>;
-
-    InputTable input;
-    OutputTable output;
+    std::vector<Column<true>> input;
+    std::vector<OutputColumn> output;
 
     friend void deserialize(Deserializer &ctx, SampleKeysArgs &args);
   };

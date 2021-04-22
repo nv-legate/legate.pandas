@@ -14,55 +14,49 @@
  *
  */
 
-#include "sorting/tasks/sample_keys.h"
-#include "sorting/utilities.h"
+#include "copy/tasks/densify.h"
+#include "column/column.h"
+#include "cudf_util/allocators.h"
 #include "cudf_util/column.h"
 #include "util/gpu_task_context.h"
 
-#include <cudf/detail/copy.hpp>
+#include <cudf/table/table.hpp>
 
 namespace legate {
 namespace pandas {
-namespace sorting {
+namespace copy {
 
 using namespace Legion;
 
-/*static*/ void SampleKeysTask::gpu_variant(const Task *task,
+/*static*/ int64_t DensifyTask::gpu_variant(const Task *task,
                                             const std::vector<PhysicalRegion> &regions,
                                             Context context,
                                             Runtime *runtime)
 {
   Deserializer ctx{task, regions};
 
-  SampleKeysArgs args;
-  deserialize(ctx, args);
+  std::vector<Column<true>> inputs;
+  std::vector<OutputColumn> outputs;
 
-  auto size = args.input[0].num_elements();
-
-  if (0 == size) {
-    for (auto &column : args.output) column.make_empty(true);
-    return;
-  }
-
-  auto num_samples = std::min<size_t>(32, std::max<size_t>(size / 4, 1));
+  deserialize(ctx, inputs);
+  deserialize(ctx, outputs);
 
   GPUTaskContext gpu_ctx{};
   auto stream = gpu_ctx.stream();
 
-  std::vector<cudf::column_view> keys;
-  for (auto &column : args.input) keys.push_back(to_cudf_column(column, stream));
+  std::vector<cudf::column_view> columns;
+  for (auto &input : inputs) columns.push_back(std::move(to_cudf_column(input, stream)));
+
+  cudf::table_view input_table(std::move(columns));
 
   DeferredBufferAllocator mr;
-  auto samples = cudf::detail::sample(cudf::table_view(std::move(keys)),
-                                      num_samples,
-                                      cudf::sample_with_replacement::FALSE,
-                                      Realm::Clock::current_time_in_nanoseconds(),
-                                      stream,
-                                      &mr);
 
-  from_cudf_table(args.output, std::move(samples), stream, mr);
+  auto result = std::make_unique<cudf::table>(input_table, stream, &mr);
+  from_cudf_table(outputs, std::move(result), stream, mr);
+
+  return static_cast<int64_t>(inputs[0].num_elements());
 }
 
-}  // namespace sorting
+}  // namespace copy
 }  // namespace pandas
 }  // namespace legate

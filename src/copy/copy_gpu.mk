@@ -16,6 +16,7 @@
 GEN_SRC += copy/tasks/compact_gpu.cc          \
 					 copy/tasks/concatenate_gpu.cc      \
 					 copy/tasks/copy_if_else_gpu.cc     \
+					 copy/tasks/densify_gpu.cc          \
 					 copy/tasks/dropna_gpu.cc           \
 					 copy/tasks/materialize_gpu.cc      \
 					 copy/tasks/read_at_gpu.cc          \
