@@ -1137,22 +1137,10 @@ class StringColumn(Column):
         nullable = dtype is not None or self.nullable
         if dtype is None:
             # Local de-duplication
-            result_column = rt.create_output_storage().create_column(
-                self.dtype,
-                nullable=True,
-            )
-            result_offsets = rt.create_output_storage().create_column(
-                self.offsets.dtype,
-                nullable=False,
-            )
-            result_chars = rt.create_output_storage().create_column(
-                self.chars.dtype,
-                nullable=False,
-            )
-            result_column.add_child(result_offsets)
-            result_column.add_child(result_chars)
+            storage = rt.create_output_storage()
+            result_column = storage.create_similar_column(self, nullable=False)
 
-            plan = Map(rt, OpCode.DROP_DUPLICATES)
+            plan = Map(rt, OpCode.DROP_DUPLICATES_CATEGORIES)
             plan.add_scalar_arg(1, ty.uint32)
             result_column.add_to_plan_output_only(plan)
             self.add_to_plan(plan, True)
@@ -1163,25 +1151,15 @@ class StringColumn(Column):
             num_pieces = result_column.num_pieces
             while num_pieces > 1:
                 # Global de-duplication
-                result_column.set_non_nullable()
-                local_dedup_column = result_column.as_string_column()
                 num_pieces = (num_pieces + radix - 1) // radix
+                local_dedup_column = result_column
 
-                result_column = rt.create_output_storage().create_column(
-                    local_dedup_column.dtype, nullable=True
+                storage = rt.create_output_storage()
+                result_column = storage.create_similar_column(
+                    self, nullable=False
                 )
-                result_offsets = rt.create_output_storage().create_column(
-                    self.offsets.dtype,
-                    nullable=False,
-                )
-                result_chars = rt.create_output_storage().create_column(
-                    self.chars.dtype,
-                    nullable=False,
-                )
-                result_column.add_child(result_offsets)
-                result_column.add_child(result_chars)
 
-                plan = Map(rt, OpCode.DROP_DUPLICATES)
+                plan = Map(rt, OpCode.DROP_DUPLICATES_CATEGORIES)
                 plan.add_scalar_arg(radix, ty.uint32)
                 result_column.add_to_plan_output_only(plan)
                 for r in range(radix):
@@ -1191,7 +1169,6 @@ class StringColumn(Column):
                 plan.execute(launch_domain)
                 del plan
 
-            result_column.set_non_nullable()
             categories_column = result_column.as_replicated_column()
             dtype = ty.CategoricalDtype(categories_column)
 

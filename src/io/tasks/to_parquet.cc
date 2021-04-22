@@ -52,6 +52,7 @@ using TableView     = detail::Table;
 
   std::vector<ColumnView> columns;
   for (auto &column : args.columns) columns.push_back(column.view());
+  auto size = columns[0].size();
 
   alloc::DeferredBufferAllocator allocator{};
   auto table = to_arrow(TableView{std::move(columns)}, args.column_names, allocator);
@@ -70,12 +71,8 @@ using TableView     = detail::Table;
                              ->compression(to_arrow_compression(args.compression))
                              ->build();
   auto arrow_properties = ::parquet::ArrowWriterProperties::Builder().store_schema()->build();
-  PARQUET_THROW_NOT_OK(::parquet::arrow::WriteTable(*table,
-                                                    arrow::default_memory_pool(),
-                                                    outfile,
-                                                    columns[0].size(),
-                                                    writer_properties,
-                                                    arrow_properties));
+  PARQUET_THROW_NOT_OK(::parquet::arrow::WriteTable(
+    *table, arrow::default_memory_pool(), outfile, size, writer_properties, arrow_properties));
 }
 
 void deserialize(Deserializer &ctx, ToParquetArgs &args)

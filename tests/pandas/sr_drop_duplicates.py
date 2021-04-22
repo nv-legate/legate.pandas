@@ -13,12 +13,16 @@
 # limitations under the License.
 #
 
-GEN_SRC += category/conversion.cc                \
-					 category/tasks/drop_duplicates_gpu.cc \
-					 category/tasks/encode_gpu.cc
+import pandas as pd
 
-GEN_GPU_SRC += category/encode.cu
+from legate import pandas as lp
+from tests.utils import equals
 
-ifeq ($(strip $(USE_NCCL)),1)
-GEN_GPU_SRC += category/tasks/encode_nccl.cu
-endif
+s = pd.Series(["A", "B", "C", "A", "D"])
+ls = lp.Series(s)
+
+for keep in ["first", "last", False]:
+    out_s = s.drop_duplicates(keep=keep).sort_index()
+    out_ls = ls.drop_duplicates(keep=keep).sort_index()
+
+    assert equals(out_ls, out_s)

@@ -16,6 +16,7 @@
 import os
 import warnings
 
+import numpy as np
 import pandas
 from pandas.api.types import is_dict_like, is_integer, is_list_like, is_scalar
 from pandas.core.common import is_bool_indexer
@@ -926,6 +927,30 @@ class DataFrame(Frame):
         return self.__ctor__(
             frame=self._frame, columns=self.columns.map(_add_suffix)
         )
+
+    @copy_docstring(pandas.DataFrame.drop_duplicates)
+    def drop_duplicates(
+        self,
+        subset=None,
+        keep="first",
+        inplace=False,
+        ignore_index=False,
+    ):
+        if subset is None:
+            subset = list(range(len(self.columns)))
+        else:
+            subset = util.to_list_if_scalar(subset)
+            idxr = self.columns.get_indexer_for(subset)
+            mask = idxr == -1
+            if mask.any():
+                raise KeyError(list(np.compress(mask, subset)))
+            subset = idxr
+
+        if keep not in ("first", "last", False):
+            raise ValueError("keep must be either 'first', 'last' or False")
+
+        frame = self._frame.drop_duplicates(subset, keep, ignore_index)
+        return self._create_or_update_frame(frame, inplace)
 
     @copy_docstring(pandas.DataFrame.equals)
     def equals(self, other):

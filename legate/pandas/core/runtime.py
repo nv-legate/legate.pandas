@@ -61,6 +61,7 @@ from legate.pandas.config import (
     CompressionType,
     DatetimeFieldCode,
     JoinTypeCode,
+    KeepMethod,
     OpCode,
     PadSideCode,
     PandasTunable,
@@ -462,6 +463,12 @@ class Runtime(LegateLibrary):
 
     def is_nullable_binary_op(self, op):
         return op not in NON_NULLABLE_BINARY_OP
+
+    def get_keep_method(self, keep):
+        if keep:
+            return getattr(KeepMethod, keep.upper())
+        else:
+            return KeepMethod.NONE
 
     def get_scan_op_code(self, op):
         return SCAN_OP_NAME_TO_CODE[op]

@@ -601,6 +601,18 @@ class Series(Frame):
     # Reindexing / selection / label manipulation
     #############################################
 
+    @copy_docstring(pandas.Series.drop_duplicates)
+    def drop_duplicates(
+        self,
+        keep="first",
+        inplace=False,
+    ):
+        if keep not in ("first", "last", False):
+            raise ValueError("keep must be either 'first', 'last' or False")
+
+        frame = self._frame.drop_duplicates([0], keep, False)
+        return self._create_or_update_frame(frame, inplace)
+
     @copy_docstring(pandas.Series.equals)
     def equals(self, other):
         if not isinstance(other, type(self)):
