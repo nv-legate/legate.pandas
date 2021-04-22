@@ -707,30 +707,6 @@ class Frame(object):
         else:
             return new_self
 
-    @copy_docstring(pandas.DataFrame.drop_duplicates)
-    def drop_duplicates(
-        self,
-        subset=None,
-        keep="first",
-        inplace=False,
-        ignore_index=False,
-    ):
-        if subset is None:
-            subset = list(range(len(self.columns)))
-        else:
-            subset = util.to_list_if_scalar(subset)
-            idxr = self.columns.get_indexer_for(subset)
-            mask = idxr == -1
-            if mask.any():
-                raise KeyError(list(np.compress(mask, subset)))
-            subset = idxr
-
-        if keep not in ("first", "last", False):
-            raise ValueError("keep must be either 'first', 'last' or False")
-
-        frame = self._frame.drop_duplicates(subset, keep, ignore_index)
-        return self._create_or_update_frame(frame, inplace)
-
     @copy_docstring(pandas.DataFrame.set_axis)
     def set_axis(self, labels, axis=0, inplace=False):
         axis = self._get_axis_number(axis, 0)

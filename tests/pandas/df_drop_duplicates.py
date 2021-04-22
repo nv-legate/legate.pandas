@@ -30,12 +30,12 @@ ldf = lp.DataFrame(df)
 out_df = df.drop_duplicates().sort_index()
 out_ldf = ldf.drop_duplicates().sort_index()
 
-assert equals(lp.DataFrame(out_df), out_ldf)
+assert equals(out_ldf, out_df)
 
 out_df = df.drop_duplicates(subset=["brand"]).sort_index()
 out_ldf = ldf.drop_duplicates(subset=["brand"]).sort_index()
 
-assert equals(lp.DataFrame(out_df), out_ldf)
+assert equals(out_ldf, out_df)
 
 out_df = df.drop_duplicates(
     subset=["brand", "style"], keep="last"
