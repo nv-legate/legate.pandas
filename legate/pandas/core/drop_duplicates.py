@@ -62,9 +62,12 @@ def _drop_duplicates_tree(runtime, inputs, subset, keep):
             runtime, inputs, subset, keep, radix=radix
         )
 
-    runtime.register_external_weighted_partition(storage.default_ipart, counts)
+    num_pieces = runtime.num_pieces
+    outputs = [column.repartition(num_pieces) for column in outputs]
+    storage = outputs[0].storage
+    volume = counts.cast(ty.int64).sum()
 
-    return (outputs, storage, counts.cast(ty.int64).sum())
+    return (outputs, storage, volume)
 
 
 def _drop_duplicates_nccl(runtime, inputs, subset, keep):
