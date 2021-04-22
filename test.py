@@ -199,6 +199,7 @@ def run_all_tests_legate(
 
     total_pass = 0
 
+    flags += ["--no-replicate"]
     flags += ["--util", str(num_util_procs)]
     if threads == 1 or (test_name == "GPU" and pynvml is None):
         for test_file in legate_tests:
