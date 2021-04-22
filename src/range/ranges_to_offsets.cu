@@ -20,6 +20,10 @@
 #include "util/gpu_task_context.h"
 #include "deserializer.h"
 
+#include <thrust/scan.h>
+
+#include <rmm/exec_policy.hpp>
+
 namespace legate {
 namespace pandas {
 namespace range {
@@ -29,15 +33,14 @@ using namespace Legion;
 namespace detail {
 
 __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
-  to_offsets(const size_t max, int32_t *out, const Rect<1> *in)
+  to_sizes(const size_t max, int32_t *out, const Rect<1> *in)
 {
   const size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= max) return;
 
-  auto offset = in[0].lo[0];
-  auto &r     = in[i];
-  out[i]      = r.lo[0] - offset;
-  if (i == max - 1) out[i + 1] = r.hi[0] - offset + 1;
+  auto &r = in[i];
+  out[i]  = static_cast<int32_t>(r.volume());
+  if (i == max - 1) out[i + 1] = 0;
 }
 
 }  // namespace detail
@@ -62,6 +65,7 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   }
 
   GPUTaskContext gpu_ctx{};
+  auto stream = gpu_ctx.stream();
 
   out.allocate(size + 1);
 
@@ -69,8 +73,10 @@ __global__ static void __launch_bounds__(THREADS_PER_BLOCK, MIN_CTAS_PER_SM)
   auto *in_ranges   = in.raw_column_read<Rect<1>>();
 
   const size_t blocks = (size + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-  detail::to_offsets<<<blocks, THREADS_PER_BLOCK, 0, gpu_ctx.stream()>>>(
-    size, out_offsets, in_ranges);
+  detail::to_sizes<<<blocks, THREADS_PER_BLOCK, 0, stream>>>(size, out_offsets, in_ranges);
+
+  thrust::exclusive_scan(
+    rmm::exec_policy(stream), out_offsets, out_offsets + size + 1, out_offsets);
 
   return size + 1;
 }

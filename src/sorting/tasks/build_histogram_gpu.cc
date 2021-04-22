@@ -56,11 +56,12 @@ using BuildHistogramArgs = BuildHistogramTask::BuildHistogramArgs;
 
   // Sort the samples
   std::vector<cudf::order> column_order;
-  for (auto asc : args.ascending)
+  std::vector<cudf::null_order> null_precedence;
+  for (auto asc : args.ascending) {
     column_order.push_back(asc ? cudf::order::ASCENDING : cudf::order::DESCENDING);
-  std::vector<cudf::null_order> null_precedence(
-    args.ascending.size(),
-    args.put_null_first ? cudf::null_order::BEFORE : cudf::null_order::AFTER);
+    null_precedence.push_back(asc == args.put_null_first ? cudf::null_order::BEFORE
+                                                         : cudf::null_order::AFTER);
+  }
   auto sorted_samples = cudf::detail::sort_by_key(cudf::table_view{input_samples},
                                                   cudf::table_view{input_samples},
                                                   column_order,
@@ -89,8 +90,8 @@ using BuildHistogramArgs = BuildHistogramTask::BuildHistogramArgs;
   std::vector<cudf::column_view> keys;
   for (auto &column : args.input) keys.push_back(to_cudf_column(column, stream));
 
-  auto splits =
-    cudf::detail::lower_bound(cudf::table_view{keys}, dividers->view(), column_order, {}, stream);
+  auto splits = cudf::detail::lower_bound(
+    cudf::table_view{keys}, dividers->view(), column_order, null_precedence, stream);
   std::vector<int32_t> offsets(args.num_pieces + 1);
   offsets[0]               = 0;
   offsets[args.num_pieces] = static_cast<int32_t>(args.input[0].num_elements());

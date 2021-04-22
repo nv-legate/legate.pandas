@@ -27,8 +27,6 @@ namespace sorting {
 
 using namespace Legion;
 
-using InputTable     = SampleKeysTask::SampleKeysArgs::InputTable;
-using OutputTable    = SampleKeysTask::SampleKeysArgs::OutputTable;
 using SampleKeysArgs = SampleKeysTask::SampleKeysArgs;
 
 void SampleKeysTask::SampleKeysArgs::sanity_check(void)
@@ -49,8 +47,8 @@ void SampleKeysTask::SampleKeysArgs::sanity_check(void)
 
   auto size = args.input[0].num_elements();
 
-  if (size == 0) {
-    for (auto &column : args.output) column.allocate(0);
+  if (0 == size) {
+    for (auto &column : args.output) column.make_empty(true);
     return;
   }
 

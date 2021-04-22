@@ -239,5 +239,11 @@ void OutputColumn::copy(const Column<true> &input, bool recurse)
       children_[idx].copy(input.child(idx), recurse);
 }
 
+void OutputColumn::check_all_valid() const
+{
+  assert(valid());
+  for (auto &child : children_) child.check_all_valid();
+}
+
 }  // namespace pandas
 }  // namespace legate
