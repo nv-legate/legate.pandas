@@ -52,7 +52,6 @@ class Bitmask {
   size_t count_set_bits(void) const;
   inline size_t count_unset_bits(void) const { return num_elements - count_set_bits(); }
   void copy(const Bitmask &target) const;
-  friend void union_bitmasks(Bitmask &out, const Bitmask &in1, const Bitmask &in2);
   friend void intersect_bitmasks(Bitmask &out, const Bitmask &in1, const Bitmask &in2);
 
 #ifdef LEGATE_USE_CUDA
@@ -75,28 +74,6 @@ class Bitmask {
 
  public:
   const size_t num_elements;
-};
-
-struct DefaultBitmaskFunction {
-  void operator()(Bitmask &out) const { out.set_all_valid(); }
-
-  void operator()(Bitmask &out, const Bitmask &in) const { in.copy(out); }
-
-  void operator()(Bitmask &out, const Bitmask &in1, const Bitmask &in2) const
-  {
-    intersect_bitmasks(out, in1, in2);
-  }
-};
-
-struct NonnullableBitmaskFunction {
-  void operator()(Bitmask &out) const { out.set_all_valid(); }
-
-  void operator()(Bitmask &out, const Bitmask &in) const { out.set_all_valid(); }
-
-  void operator()(Bitmask &out, const Bitmask &in1, const Bitmask &in2) const
-  {
-    out.set_all_valid();
-  }
 };
 
 }  // namespace pandas

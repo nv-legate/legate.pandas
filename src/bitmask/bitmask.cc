@@ -60,12 +60,6 @@ void Bitmask::copy(const Bitmask &target) const
   memcpy(target.bitmask, bitmask, num_elements);
 }
 
-void union_bitmasks(Bitmask &out, const Bitmask &in1, const Bitmask &in2)
-{
-  assert(out.num_elements == in1.num_elements && out.num_elements == in2.num_elements);
-  for (size_t idx = 0; idx < out.num_elements; ++idx) out.set(idx, in1.get(idx) || in2.get(idx));
-}
-
 void intersect_bitmasks(Bitmask &out, const Bitmask &in1, const Bitmask &in2)
 {
   assert(out.num_elements == in1.num_elements && out.num_elements == in2.num_elements);

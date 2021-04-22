@@ -22,10 +22,6 @@
 namespace legate {
 namespace pandas {
 
-#define THREADS_PER_BLOCK 128
-#define MIN_CTAS_PER_SM 4
-#define MAX_REDUCTION_CTAS 1024
-
 #ifdef DEBUG_PANDAS
 #define SYNC_AND_CHECK_STREAM(stream)        \
   do {                                       \
