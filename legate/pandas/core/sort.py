@@ -84,7 +84,7 @@ class Sorter(object):
         if renumber_output:
             result_storage = plan.promote_output_storage(result_storage)
             rt.register_external_weighted_partition(
-                result_storage.default_ipart, counts.cast(ty.int32)
+                result_storage.default_ipart, counts.cast(ty.int64)
             )
         del plan
 
