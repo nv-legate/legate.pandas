@@ -24,6 +24,7 @@ from legate.pandas.common import errors as err, types as ty, util as util
 from legate.pandas.config import OpCode
 
 from .column import Column, _create_column
+from .drop_duplicates import drop_duplicates
 from .future import Scalar
 from .groupby import GroupbyReducer
 from .index import BaseIndex, create_index_from_columns, create_range_index
@@ -866,6 +867,28 @@ class Table(object):
         results = [column.scan_op(op, skipna) for column in self._columns]
 
         return self.replace_columns(results)
+
+    def drop_duplicates(self, subset, keep, ignore_index):
+        inputs = self._columns.copy()
+        if not ignore_index:
+            inputs += self._index.columns
+
+        (outputs, storage, volume) = drop_duplicates(
+            self._runtime,
+            inputs,
+            subset,
+            keep,
+        )
+
+        if ignore_index:
+            result_index = create_range_index(storage, volume)
+        else:
+            result_index = create_index_from_columns(
+                outputs[len(self._columns) :], volume, self._index.names
+            )
+            outputs = outputs[: len(self._columns)]
+
+        return self.replace_columns(outputs, index=result_index)
 
     def dropna(self, axis, idxr, thresh):
         assert axis == 0

@@ -16,6 +16,7 @@
 GEN_SRC += copy/tasks/compact_gpu.cc          \
 					 copy/tasks/concatenate_gpu.cc      \
 					 copy/tasks/copy_if_else_gpu.cc     \
+					 copy/tasks/drop_duplicates_gpu.cc  \
 					 copy/tasks/dropna_gpu.cc           \
 					 copy/tasks/materialize_gpu.cc      \
 					 copy/tasks/read_at_gpu.cc          \
@@ -23,6 +24,10 @@ GEN_SRC += copy/tasks/compact_gpu.cc          \
 					 copy/tasks/scatter_by_slice_gpu.cc \
 					 copy/tasks/slice_by_range_gpu.cc   \
 
-GEN_GPU_SRC += copy/materialize.cu    \
-							 copy/tasks/fill.cu     \
+GEN_GPU_SRC += copy/materialize.cu                \
+							 copy/tasks/fill.cu                 \
 							 copy/tasks/write_at.cu
+
+ifeq ($(strip $(USE_NCCL)),1)
+GEN_GPU_SRC += copy/tasks/drop_duplicates_nccl.cu
+endif

@@ -120,6 +120,11 @@ void deserialize(Deserializer &ctx, JoinTypeCode &code)
   code = static_cast<JoinTypeCode>(ctx.deserializer_.unpack_32bit_int());
 }
 
+void deserialize(Deserializer &ctx, KeepMethod &code)
+{
+  code = static_cast<KeepMethod>(ctx.deserializer_.unpack_32bit_int());
+}
+
 void deserialize(Deserializer &ctx, bool &value) { value = ctx.deserializer_.unpack_bool(); }
 
 void deserialize(Deserializer &ctx, Legion::PhysicalRegion &pr, Legion::FieldID &fid)

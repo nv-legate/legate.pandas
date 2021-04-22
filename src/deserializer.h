@@ -150,6 +150,7 @@ class Deserializer {
   friend void deserialize(Deserializer &ctx, DatetimeFieldCode &code);
   friend void deserialize(Deserializer &ctx, CompressionType &code);
   friend void deserialize(Deserializer &ctx, JoinTypeCode &code);
+  friend void deserialize(Deserializer &ctx, KeepMethod &code);
   friend void deserialize(Deserializer &ctx, bool &value);
   friend void deserialize(Deserializer &ctx, Legion::PhysicalRegion &pr, Legion::FieldID &fid);
 

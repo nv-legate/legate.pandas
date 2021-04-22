@@ -249,6 +249,12 @@ enum class ShardingCode : int {
   LAST_SHARD = 1,
 };
 
+enum class KeepMethod : int {
+  FIRST = 0,
+  LAST  = 1,
+  NONE  = 2,
+};
+
 enum class JoinTypeCode : int {
   INNER = 0,
   LEFT  = 1,

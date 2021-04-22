@@ -52,7 +52,9 @@ class OpCode(IntEnum):
     COUNT_NULLS = c_header.COUNT_NULLS
     CREATE_DIR = c_header.CREATE_DIR
     DROPNA = c_header.DROPNA
-    DROP_DUPLICATES = c_header.DROP_DUPLICATES
+    DROP_DUPLICATES_CATEGORIES = c_header.DROP_DUPLICATES_CATEGORIES
+    DROP_DUPLICATES_NCCL = c_header.DROP_DUPLICATES_NCCL
+    DROP_DUPLICATES_TREE = c_header.DROP_DUPLICATES_TREE
     ENCODE = c_header.ENCODE
     ENCODE_CATEGORY = c_header.ENCODE_CATEGORY
     ENCODE_NCCL = c_header.ENCODE_NCCL
@@ -143,6 +145,13 @@ class ProjectionCode(IntEnum):
     PROJ_RADIX_4_2 = 2
     PROJ_RADIX_4_3 = 3
     LAST_PROJ = 4
+
+
+@unique
+class KeepMethod(IntEnum):
+    FIRST = 0
+    LAST = 1
+    NONE = 2
 
 
 @unique

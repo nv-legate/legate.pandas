@@ -23,6 +23,7 @@ namespace cudf {
 class aggregation;
 enum class binary_operator;
 enum class type_id;
+enum class duplicate_keep_option;
 
 namespace io {
 
@@ -41,6 +42,8 @@ std::unique_ptr<cudf::aggregation> to_cudf_agg(AggregationCode code);
 cudf::binary_operator to_cudf_binary_op(AggregationCode code);
 
 cudf::io::compression_type to_cudf_compression(CompressionType compression);
+
+cudf::duplicate_keep_option to_cudf_keep_option(KeepMethod method);
 
 }  // namespace pandas
 }  // namespace legate
