@@ -61,12 +61,19 @@ If you have questions, please contact us at legate(at)nvidia.com.
 
 ---
 
+1. [Installation](#installation)
 1. [Dependencies](#dependencies)
-2. [Installation](#installation)
+2. [Building from Source](#building-from-source)
 3. [Execution](#execution)
 4. [Supported Features](#supported-features)
 5. [Differences between Pandas and Legate Pandas](#differences-between-pandas-and-legate-pandas)
 6. [Limitations and Known Issues](#limitations-and-known-issues)
+
+## Installation
+
+Pre-built docker images containing all Legate libraries are available on the
+[quickstart](https://github.com/nv-legate/quickstart) repo. The next sections
+describe how to build Legate Pandas from source.
 
 ## Dependencies
 
@@ -96,7 +103,7 @@ conda env create -n legate -f conda/legate_pandas_dev_nccl2.8.yml
 Users must also install [Legate Core](https://github.com/nv-legate/legate.core)
 to build Legate Pandas from source.
 
-## Installation
+## Building from Source
 
 Legate Pandas can be built and installed from source using two install scripts,
 `setup.py` and `install.py`. Both can be used interchangeably, but the latter
