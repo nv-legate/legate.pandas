@@ -202,7 +202,7 @@ def build_legate_pandas(
         pass
 
     cmd = [
-        "python",
+        sys.executable,
         "setup.py",
         "install",
         "--recurse",
