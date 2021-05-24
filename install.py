@@ -183,7 +183,6 @@ def build_legate_pandas(
                 else []
             )
             + (["NCCL_PATH=%s" % nccl_dir] if use_nccl else [])
-            + (["GCC=%s" % os.environ["CXX"]] if "CXX" in os.environ else [])
             + (["USE_CUDA=0"] if no_cuda else [])
             + (["PANDAS_DYNAMIC_CUDA_ARCH=1"] if dynamic_cuda_arch else [])
         )
