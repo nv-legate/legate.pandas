@@ -96,7 +96,7 @@ static const char *const pandas_library_name = "legate.pandas";
                                              bool leaf,
                                              bool inner,
                                              bool idempotent,
-                                             bool ret_type)
+                                             size_t ret_size)
 {
   log_legate.info("Recording %s", task_name);
   assert((kind == Processor::LOC_PROC) || (kind == Processor::TOC_PROC));
@@ -108,7 +108,7 @@ static const char *const pandas_library_name = "legate.pandas";
                                                      task_name,
                                                      descriptor,
                                                      var,
-                                                     ret_type));
+                                                     ret_size));
   TaskVariantRegistrar &registrar = pending_task_variants.back();
   registrar.execution_constraints.swap(execution_constraints);
   registrar.layout_constraints.swap(layout_constraints);
@@ -151,7 +151,7 @@ static const char *const pandas_library_name = "legate.pandas";
     // Attach the task name too for debugging
     runtime->attach_name(it->task_id, it->task_name, false /*mutable*/, true /*local only*/);
     log_legate.info("Registering %s (tid: %u)", it->task_name, it->task_id);
-    runtime->register_task_variant(*it, it->descriptor, NULL, 0, it->ret_type, it->var);
+    runtime->register_task_variant(*it, it->descriptor, NULL, 0, it->ret_size, it->var);
   }
   pending_task_variants.clear();
 

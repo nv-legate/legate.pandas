@@ -326,7 +326,7 @@ class LegatePandas {
                              bool leaf,
                              bool inner,
                              bool idempotent,
-                             bool ret_type);
+                             size_t ret_size);
   // Runtime registration callback
   static void registration_callback(Legion::Machine m,
                                     Legion::Runtime *rt,
@@ -345,12 +345,12 @@ class LegatePandas {
                        const char *t_name,
                        const Legion::CodeDescriptor &desc,
                        Legion::VariantID v,
-                       bool ret)
+                       size_t ret)
       : Legion::TaskVariantRegistrar(tid, global, var_name),
         task_name(t_name),
         descriptor(desc),
         var(v),
-        ret_type(ret)
+        ret_size(ret)
     {
     }
 
@@ -358,7 +358,7 @@ class LegatePandas {
     const char *task_name;
     Legion::CodeDescriptor descriptor;
     Legion::VariantID var;
-    bool ret_type;
+    size_t ret_size;
   };
   static std::deque<PendingTaskVariant> &get_pending_task_variants(void);
 };
@@ -381,7 +381,7 @@ class PandasTask : public LegateTask<T> {
                              bool leaf,
                              bool inner,
                              bool idempotent,
-                             bool ret_type)
+                             size_t ret_size)
   {
     // For this just turn around and call this on the base LegatePandas
     // type so it will deduplicate across all task kinds
@@ -395,7 +395,7 @@ class PandasTask : public LegateTask<T> {
                                  leaf,
                                  inner,
                                  idempotent,
-                                 ret_type);
+                                 ret_size);
   }
 };
 
