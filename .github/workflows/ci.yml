@@ -50,5 +50,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: build-log
+          name: test-log
           path: ./**/*build.log.gpg
