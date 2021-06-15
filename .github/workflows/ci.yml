@@ -8,7 +8,7 @@ on:
       - gh-pages  # deployment target branch (this workflow should not exist on that branch anyway)
 env:
   COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
-  PROJECT: github-numpy-ci
+  PROJECT: github-pandas-ci
 jobs:
   build:
     runs-on: self-hosted
@@ -18,7 +18,7 @@ jobs:
           /data/github-runner/legate-bin/setup.sh
           cd legate-ci
           cd github-ci/
-          cd legate.numpy
+          cd legate.pandas
           rm -rf ngc-artifacts
           ./build.sh > ${COMMIT}-build.log 2>&1
           cat *artifacts/*/*
@@ -37,7 +37,7 @@ jobs:
           /data/github-runner/legate-bin/setup.sh
           cd legate-ci
           cd github-ci/
-          cd legate.numpy
+          cd legate.pandas
           if [[ ! -d ngc-artifacts ]]
           then
             mkdir ngc-artifacts
