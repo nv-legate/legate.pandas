@@ -44,31 +44,6 @@ except NameError:
     xrange = range  # Python 3
 
 
-class ArrowAttach(Attach):
-    def __init__(
-        self,
-        region,
-        field,
-        arrow_array,
-        mapper=0,
-        tag=0,
-    ):
-        self.launcher = legion.legion_attach_launcher_create(
-            region.handle,
-            region.handle,
-            2,  # External array instance, from legion_config.h
-        )
-        self._launcher = ffi.gc(
-            self.launcher, legion.legion_attach_launcher_destroy
-        )
-        legion.legion_attach_launcher_add_cpu_soa_field(
-            self.launcher,
-            ffi.cast("legion_field_id_t", field),
-            ffi.cast("void*", arrow_array.address),
-            True,
-        )
-
-
 class LegateStorageAdaptor(object):
     def __init__(self, storage):
         """
@@ -223,7 +198,7 @@ class StorageSlice(object):
         )
 
         # 2. Attach the array data to the temporary region
-        attach = ArrowAttach(src_region, src_field_id, arrow_array)
+        attach = Attach(src_region, src_field_id, arrow_array)
         attach.set_restricted(False)
         src_physical_region = self._runtime.dispatch(attach)
 
