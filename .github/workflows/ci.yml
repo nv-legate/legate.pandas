@@ -27,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: build-log
-          path: ./**/*build.log.gpg
+          path: ./**/${COMMIT}-build.log.gpg
   test:
     runs-on: self-hosted
     needs: build
@@ -51,4 +51,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: test-log
-          path: ./**/*build.log.gpg
+          path: ./**/${COMMIT}-test.log.gpg
