@@ -44,7 +44,7 @@ jobs:
           else
             rm -rf ngc-artifacts/*
           fi
-          ./test.sh --cpus 2 > ${COMMIT}-test-cpu.log 2>&1
+          ./test.sh --cpus 2 -j 1 > ${COMMIT}-test-cpu.log 2>&1
           cat *artifacts/*/*
       - name: Upload Build Log
         if: always()
@@ -68,7 +68,7 @@ jobs:
           else
             rm -rf ngc-artifacts/*
           fi
-          ./test.sh --use cuda > ${COMMIT}-test-gpu.log 2>&1
+          ./test.sh --use cuda --gpus 1 -j 1 > ${COMMIT}-test-gpu.log 2>&1
           cat *artifacts/*/*
       - name: Upload Build Log
         if: always()
@@ -76,27 +76,3 @@ jobs:
         with:
           name: test-log
           path: ./**/${{ env.COMMIT }}-test-gpu.log.gpg
-  test-omp:
-    runs-on: self-hosted
-    needs: build
-    steps:
-      - name: Run CPU tests
-        run: |
-          /data/github-runner/legate-bin/setup.sh
-          cd legate-ci
-          cd github-ci/
-          cd legate.pandas
-          if [[ ! -d ngc-artifacts ]]
-          then
-            mkdir ngc-artifacts
-          else
-            rm -rf ngc-artifacts/*
-          fi
-          ./test.sh --use openmp --ompthreads 4 --omps 1 > ${COMMIT}-test-omp.log 2>&1
-          cat *artifacts/*/*
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-log
-          path: ./**/${{ env.COMMIT }}-test-omp.log.gpg
