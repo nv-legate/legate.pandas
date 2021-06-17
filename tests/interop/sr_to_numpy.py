@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import legate.numpy as np
+try:
+    import legate.numpy as np
+except ModuleNotFoundError:
+    import numpy as np
 from legate import pandas as lp
 
 s1 = lp.Series([1, 2, 3])
