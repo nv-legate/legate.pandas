@@ -44,8 +44,14 @@ jobs:
           else
             rm -rf ngc-artifacts/*
           fi
-          ./test.sh --cpus 1 -j 1 > ${COMMIT}-test-cpu.log 2>&1
-          ./test.sh --cpus 2 -j 1 >> ${COMMIT}-test-cpu.log 2>&1
+      - name: Test single CPU
+        run: ./test.sh --cpus 1 -j 1 > ${COMMIT}-test-cpu.log 2>&1
+      - name: Test two CPUs
+        if: always()
+        run: ./test.sh --cpus 2 -j 1 >> ${COMMIT}-test-cpu.log 2>&1
+      - name: Process output
+        if: always()
+        run: |
           /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-cpu.log 2>&1
           cat *artifacts/*/*
       - name: Upload Build Log
@@ -70,8 +76,13 @@ jobs:
           else
             rm -rf ngc-artifacts/*
           fi
-          ./test.sh --use cuda --gpus 1 -j 1 > ${COMMIT}-test-gpu.log 2>&1
-          ./test.sh --use cuda --gpus 2 -j 1 >> ${COMMIT}-test-gpu.log 2>&1
+      - name: Test GPU
+        run: ./test.sh --use cuda --gpus 1 -j 1 > ${COMMIT}-test-gpu.log 2>&1
+      - name: Test two GPUs
+        run: ./test.sh --use cuda --gpus 2 -j 1 >> ${COMMIT}-test-gpu.log 2>&1
+      - name: Process output
+        if: always()
+        run: |
           /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-gpu.log
           cat *artifacts/*/*
       - name: Upload Build Log
