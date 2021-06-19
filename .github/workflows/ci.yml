@@ -9,6 +9,8 @@ on:
 env:
   COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
   PROJECT: github-pandas-ci
+  # Prevent output buffering
+  PYTHONUNBUFFERED: 1
 defaults:
   run:
     working-directory: legate-ci/github-ci/legate.pandas
@@ -42,7 +44,6 @@ jobs:
           fi
       - name: Test single CPU
         run: |
-          pwd
           ./test.sh --cpus 1 -j 1 > ${COMMIT}-test-cpu.log 2>&1
       - name: Test two CPUs
         if: always()
