@@ -127,7 +127,7 @@ def run_test(
             cwd=root_dir,
             stdout=FNULL if not verbose or suppress_stdout else sys.stderr,
             stderr=FNULL if not verbose else sys.stderr,
-            show=False,
+            show=verbose,
         )
         return True, test_file
     except (OSError, subprocess.CalledProcessError):
