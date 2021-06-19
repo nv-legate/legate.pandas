@@ -41,14 +41,16 @@ jobs:
             rm -rf ngc-artifacts/*
           fi
       - name: Test single CPU
-        run: cd legate.pandas./test.sh --cpus 1 -j 1 > ${COMMIT}-test-cpu.log 2>&1
+        run: |
+          pwd
+          ./test.sh --cpus 1 -j 1 > ${COMMIT}-test-cpu.log 2>&1
       - name: Test two CPUs
         if: always()
         run: ./test.sh --cpus 2 -j 1 >> ${COMMIT}-test-cpu.log 2>&1
       - name: Process output
         if: always()
         run: |
-          /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-cpu.log 2>&1
+          /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-cpu.log
           cat *artifacts/*/*
       - name: Upload Build Log
         if: always()
@@ -71,6 +73,7 @@ jobs:
       - name: Test GPU
         run: ./test.sh --use cuda --gpus 1 -j 1 > ${COMMIT}-test-gpu.log 2>&1
       - name: Test two GPUs
+        if: always()
         run: ./test.sh --use cuda --gpus 2 -j 1 >> ${COMMIT}-test-gpu.log 2>&1
       - name: Process output
         if: always()
