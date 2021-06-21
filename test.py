@@ -127,7 +127,7 @@ def run_test(
             cwd=root_dir,
             stdout=FNULL if not verbose or suppress_stdout else sys.stderr,
             stderr=FNULL if not verbose else sys.stderr,
-            show=False,
+            show=verbose,
         )
         return True, test_file
     except (OSError, subprocess.CalledProcessError):
@@ -483,6 +483,7 @@ def run_tests(
             (float(100 * total_pass) / total_count),
         )
     )
+    return not (total_count == total_pass)
 
 
 # behaves enough like a normal list for ArgumentParser's needs, except for
@@ -631,7 +632,7 @@ def driver():
 
     args = parser.parse_args()
 
-    run_tests(**vars(args))
+    sys.exit(run_tests(**vars(args)))
 
 
 if __name__ == "__main__":
