@@ -1,4 +1,4 @@
-name: Build legate.core
+name: Build legate.pandas
 on: 
   push:
     branches-ignore:
