@@ -11,9 +11,6 @@ env:
   PROJECT: github-pandas-ci
   # Prevent output buffering
   PYTHONUNBUFFERED: 1
-defaults:
-  run:
-    working-directory: legate-ci/github-ci/legate.pandas
 jobs:
   build:
     runs-on: self-hosted
@@ -21,7 +18,8 @@ jobs:
       - name: Run CI build
         run: |
           /data/github-runner/legate-bin/setup.sh
-          rm -rf ngc-artifacts
+          cd legate-ci/github-ci/legate.pandas
+          rm -rf ngc-artifacts || true
           ./build.sh > ${COMMIT}-build.log 2>&1
           cat *artifacts/*/*
       - name: Upload Build Log
@@ -33,57 +31,39 @@ jobs:
   test:
     runs-on: self-hosted
     needs: build
+    strategy: 
+      fail-fast: false
+      matrix:
+        include:
+          - {name: 1 CPU test, optinos: --cpus 1, log: cpu}
+          - {name: 2 CPUs test, options: --cpus 2, log: cpus}
+          - {name: GPU test, options: --use cuda --gpus 1, log: gpu}
+          - {name: 2 GPUs test, options: --use cuda --gpus 2, log: gpus}
+    name: ${{ matrix.name }}
     steps:
-      - name: Run CPU tests
+      - name: Prepare
         run: |
+          /data/github-runner/legate-bin/setup.sh
+          cd legate-ci/github-ci/legate.pandas
           if [[ ! -d ngc-artifacts ]]
           then
             mkdir ngc-artifacts
           else
             rm -rf ngc-artifacts/*
           fi
-      - name: Test single CPU
+      - name: Test
         run: |
-          ./test.sh --cpus 1 -j 1 > ${COMMIT}-test-cpu.log 2>&1
-      - name: Test two CPUs
-        if: always()
-        run: ./test.sh --cpus 2 -j 1 >> ${COMMIT}-test-cpu.log 2>&1
+          cd legate-ci/github-ci/legate.pandas
+          ./test.sh ${{ matrix.options }} -j 1 > ${COMMIT}-test-${{ matrix.log }}.log 2>&1
       - name: Process output
         if: always()
         run: |
-          /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-cpu.log
+          cd legate-ci/github-ci/legate.pandas
+          /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-${{ matrix.log }}.log
           cat *artifacts/*/*
-      - name: Upload Build Log
+      - name: Upload Log
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: test-cpu-log
-          path: ./**/${{ env.COMMIT }}-test-cpu.log.gpg
-  test-gpu:
-    runs-on: self-hosted
-    needs: build
-    steps:
-      - name: Run GPU tests
-        run: |
-          if [[ ! -d ngc-artifacts ]]
-          then
-            mkdir ngc-artifacts
-          else
-            rm -rf ngc-artifacts/*
-          fi
-      - name: Test GPU
-        run: ./test.sh --use cuda --gpus 1 -j 1 > ${COMMIT}-test-gpu.log 2>&1
-      - name: Test two GPUs
-        if: always()
-        run: ./test.sh --use cuda --gpus 2 -j 1 >> ${COMMIT}-test-gpu.log 2>&1
-      - name: Process output
-        if: always()
-        run: |
-          /data/github-runner/legate-bin/encrypt.sh ${COMMIT}-test-gpu.log
-          cat *artifacts/*/*
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-gpu-log
-          path: ./**/${{ env.COMMIT }}-test-gpu.log.gpg
+          name: test-${{ matrix.log }}-log
+          path: ./**/${{ env.COMMIT }}-test-${{ matrix.log }}.log.gpg
