@@ -185,7 +185,7 @@ semantics as much as possible in Legate Pandas so that users can port their
 code to Legate Pandas effortlessly, there are some occasions that we had to
 diverge for performance reasons:
 
-* Joins do not sort keys of the outputs.
+* Joins do not preserve the order of keys in the outputs.
 
 * Groupby reductions do not sort keys of the outputs by default. Users can
   still request sorted outputs with `sort=True`, which merely sorts the
