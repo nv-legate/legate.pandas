@@ -28,6 +28,46 @@ import sys
 _version = sys.version_info.major
 
 
+class BooleanFlag(argparse.Action):
+    def __init__(
+        self,
+        option_strings,
+        dest,
+        default,
+        required=False,
+        help="",
+        metavar=None,
+    ):
+        assert all(not opt.startswith("--no") for opt in option_strings)
+
+        def flatten(list):
+            return [item for sublist in list for item in sublist]
+
+        option_strings = flatten(
+            [
+                [opt, "--no-" + opt[2:], "--no" + opt[2:]]
+                if opt.startswith("--")
+                else [opt]
+                for opt in option_strings
+            ]
+        )
+        super().__init__(
+            option_strings,
+            dest,
+            nargs=0,
+            const=None,
+            default=default,
+            type=bool,
+            choices=None,
+            required=required,
+            help=help,
+            metavar=metavar,
+        )
+
+    def __call__(self, parser, namespace, values, option_string):
+        setattr(namespace, self.dest, not option_string.startswith("--no"))
+
+
 def git_clone(repo_dir, url, branch=None, tag=None, commit=None):
     assert branch is not None or tag is not None or commit is not None
     if branch is not None:
@@ -141,7 +181,7 @@ def build_legate_pandas(
     use_nccl,
     cmake,
     cmake_exe,
-    no_cuda,
+    cuda,
     debug,
     clean_first,
     python_only,
@@ -179,11 +219,11 @@ def build_legate_pandas(
                     "USE_NCCL=%s" % (1 if use_nccl else 0),
                     "USE_HIJACK=%s" % (1 if use_hijack else 0),
                 ]
-                if not no_cuda
+                if cuda
                 else []
             )
             + (["NCCL_PATH=%s" % nccl_dir] if use_nccl else [])
-            + (["USE_CUDA=0"] if no_cuda else [])
+            + (["USE_CUDA=0"] if not cuda else [])
             + (["PANDAS_DYNAMIC_CUDA_ARCH=1"] if dynamic_cuda_arch else [])
         )
         if clean_first:
@@ -243,7 +283,7 @@ def install(
     nccl_dir=None,
     thrust_dir=None,
     use_nccl=True,
-    no_cuda=False,
+    cuda=True,
     debug=False,
     clean_first=True,
     python_only=False,
@@ -291,7 +331,7 @@ def install(
         install=install_thrust,
     )
 
-    if not no_cuda:
+    if cuda:
         cudf_dir = get_library_path(
             cudf_dir,
             legate_pandas_dir,
@@ -356,7 +396,7 @@ def install(
         use_nccl,
         cmake,
         cmake_exe,
-        no_cuda,
+        cuda,
         debug,
         clean_first,
         python_only,
@@ -367,13 +407,13 @@ def install(
 
 
 def driver():
-    parser = argparse.ArgumentParser(description="Install Legate front end.")
+    parser = argparse.ArgumentParser(description="Install Legate Pandas.")
     parser.add_argument(
         "--debug",
         dest="debug",
         action="store_true",
         required=False,
-        default=os.environ.get("DEBUG") == "1",
+        default=os.environ.get("DEBUG", "0") == "1",
         help="Build Legate with debugging enabled.",
     )
     parser.add_argument(
@@ -419,37 +459,23 @@ def driver():
         help="Path to NCCL installation directory.",
     )
     parser.add_argument(
-        "--no-nccl",
+        "--nccl",
         dest="use_nccl",
-        action="store_false",
-        required=False,
+        action=BooleanFlag,
         default=True,
-        help="Turn off NCCL support in Legate Pandas.",
+        help="Build Legate Pandas with NCCL support.",
     )
     parser.add_argument(
-        "--no-cuda",
-        dest="no_cuda",
-        action="store_true",
-        required=False,
-        default=False,
-        help="Turn off CUDA tasks in Legate Pandas.",
+        "--cuda",
+        action=BooleanFlag,
+        default=os.environ.get("USE_CUDA", "1") == "1",
+        help="Build Legate Pandas with CUDA support.",
     )
     parser.add_argument(
         "--cmake",
-        dest="cmake",
-        action="store_true",
-        required=False,
-        default=os.environ["USE_CMAKE"] == "1"
-        if "USE_CMAKE" in os.environ
-        else None,
-        help="Build Legate with CMake.",
-    )
-    parser.add_argument(
-        "--no-cmake",
-        dest="cmake",
-        action="store_false",
-        required=False,
-        help="Don't build Legate with CMake (instead use GNU Make).",
+        action=BooleanFlag,
+        default=os.environ.get("USE_CMAKE", "0") == "1",
+        help="Build Legate Pandas with CMake instead of GNU Make.",
     )
     parser.add_argument(
         "--with-cmake",
@@ -462,19 +488,9 @@ def driver():
     parser.add_argument(
         "--clean",
         dest="clean_first",
-        action="store_true",
-        required=False,
-        default=None,
+        action=BooleanFlag,
+        default=True,
         help="Clean before build.",
-    )
-    parser.add_argument(
-        "--no-clean",
-        "--noclean",
-        dest="clean_first",
-        action="store_false",
-        required=False,
-        default=None,
-        help="Skip clean before build.",
     )
     parser.add_argument(
         "--python-only",
