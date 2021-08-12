@@ -25,8 +25,6 @@ import shutil
 import subprocess
 import sys
 
-_version = sys.version_info.major
-
 
 class BooleanFlag(argparse.Action):
     def __init__(
@@ -274,32 +272,28 @@ def get_library_path(
 
 
 def install(
-    cmake=None,
-    cmake_exe=None,
-    legate_dir=None,
-    cudf_dir=None,
-    rmm_dir=None,
-    arrow_dir=None,
-    nccl_dir=None,
-    thrust_dir=None,
-    use_nccl=True,
-    cuda=True,
-    debug=False,
-    clean_first=True,
-    python_only=False,
-    dynamic_cuda_arch=False,
-    extra_flags=[],
-    thread_count=None,
-    verbose=False,
+    cmake,
+    cmake_exe,
+    legate_dir,
+    cudf_dir,
+    rmm_dir,
+    arrow_dir,
+    nccl_dir,
+    thrust_dir,
+    use_nccl,
+    cuda,
+    debug,
+    clean_first,
+    python_only,
+    dynamic_cuda_arch,
+    extra_flags,
+    thread_count,
+    verbose,
 ):
-    if clean_first is None:
-        clean_first = True
-
     legate_pandas_dir = os.path.dirname(os.path.realpath(__file__))
 
     cmake = get_cmake_config(cmake, legate_pandas_dir, default=False)
 
-    thread_count = thread_count
     if thread_count is None:
         thread_count = multiprocessing.cpu_count()
 
