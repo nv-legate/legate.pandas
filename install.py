@@ -208,16 +208,25 @@ def build_legate_pandas(
                 else []
             )
             + (["NCCL_PATH=%s" % nccl_dir] if use_nccl else [])
+            # This is already defined in config.mk, mirroring what the core
+            # was built with, but the user can explicitly disable it.
             + (["USE_CUDA=0"] if not cuda else [])
             + (["PANDAS_DYNAMIC_CUDA_ARCH=1"] if dynamic_cuda_arch else [])
         )
+        # Remove this from the environment, to make sure a USE_CUDA=1 cannnot
+        # override a USE_CUDA ?= 0 in config.mk.
+        make_env = os.environ.copy()
+        make_env.pop("USE_CUDA", None)
         if clean_first:
             subprocess.check_call(
-                ["make"] + make_flags + ["clean"], cwd=src_dir
+                ["make"] + make_flags + ["clean"],
+                cwd=src_dir,
+                env=make_env,
             )
         subprocess.check_call(
             ["make"] + make_flags + ["install", "-j", str(thread_count)],
             cwd=src_dir,
+            env=make_env,
         )
 
     try:
@@ -448,10 +457,13 @@ def driver():
         help="Build Legate Pandas with NCCL support.",
     )
     parser.add_argument(
-        "--cuda",
-        action=BooleanFlag,
+        "--no-cuda",
+        dest="cuda",
+        action="store_false",
+        required=False,
         default=os.environ.get("USE_CUDA", "1") == "1",
-        help="Build Legate Pandas with CUDA support.",
+        help="Build Legate Pandas without CUDA, even if Legate Core has CUDA "
+        "support.",
     )
     parser.add_argument(
         "--cmake",
