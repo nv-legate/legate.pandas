@@ -142,6 +142,15 @@ def find_c_define(define, header):
     return False
 
 
+def find_compile_flag(flag, makefile):
+    with open(makefile, "r") as f:
+        for line in f:
+            toks = line.split()
+            if len(toks) == 3 and toks[0] == flag:
+                return toks[2] == "1"
+    assert False, f"Compile flag '{flag}' not found"
+
+
 def has_cuda_hijack(legate_dir):
     realm_path = os.path.join(legate_dir, "lib", "librealm.so")
     try:
@@ -208,7 +217,6 @@ def build_legate_pandas(
                 else []
             )
             + (["NCCL_PATH=%s" % nccl_dir] if use_nccl else [])
-            + (["USE_CUDA=0"] if not cuda else [])
             + (["PANDAS_DYNAMIC_CUDA_ARCH=1"] if dynamic_cuda_arch else [])
         )
         if clean_first:
@@ -268,7 +276,6 @@ def install(
     nccl_dir,
     thrust_dir,
     use_nccl,
-    cuda,
     debug,
     clean_first,
     python_only,
@@ -313,6 +320,9 @@ def install(
         install=install_thrust,
     )
 
+    # Match the core's setting regarding CUDA support.
+    makefile_path = os.path.join(legate_dir, "share", "legate", "config.mk")
+    cuda = find_compile_flag("USE_CUDA", makefile_path)
     if cuda:
         cudf_dir = get_library_path(
             cudf_dir,
@@ -446,12 +456,6 @@ def driver():
         action=BooleanFlag,
         default=True,
         help="Build Legate Pandas with NCCL support.",
-    )
-    parser.add_argument(
-        "--cuda",
-        action=BooleanFlag,
-        default=os.environ.get("USE_CUDA", "1") == "1",
-        help="Build Legate Pandas with CUDA support.",
     )
     parser.add_argument(
         "--cmake",
